@@ -1,0 +1,135 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  nickname     String
+  passwordHash String
+  latitude     Float?
+  longitude    Float?
+  createdAt    DateTime @default(now())
+
+  hostedRooms      Room[]            @relation("RoomHost")
+  memberships      RoomMember[]
+  orderItems       OrderItem[]
+  settlementShares SettlementShare[]
+  chatMessages     ChatMessage[]
+}
+
+model Room {
+  id             String     @id @default(cuid())
+  title          String
+  restaurantName String
+  restaurantUrl  String?
+  status         RoomStatus @default(OPEN)
+  hostId         String
+  host           User       @relation("RoomHost", fields: [hostId], references: [id])
+  maxMembers     Int        @default(4)
+  deliveryFee    Int
+  minimumOrder   Int
+  radiusKm       Float      @default(1.0)
+  latitude       Float
+  longitude      Float
+  deadline       DateTime
+  createdAt      DateTime   @default(now())
+
+  members      RoomMember[]
+  orderItems   OrderItem[]
+  settlement   Settlement?
+  chatMessages ChatMessage[]
+}
+
+enum RoomStatus {
+  OPEN
+  ORDERING
+  ORDERED
+  SETTLED
+  CANCELLED
+}
+
+model RoomMember {
+  id       String   @id @default(cuid())
+  roomId   String
+  room     Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User     @relation(fields: [userId], references: [id])
+  joinedAt DateTime @default(now())
+
+  @@unique([roomId, userId])
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  roomId    String
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  name      String
+  price     Int
+  quantity  Int      @default(1)
+  options   String?
+  createdAt DateTime @default(now())
+}
+
+model Settlement {
+  id          String           @id @default(cuid())
+  roomId      String           @unique
+  room        Room             @relation(fields: [roomId], references: [id])
+  totalAmount Int
+  deliveryFee Int
+  status      SettlementStatus @default(PENDING)
+  createdAt   DateTime         @default(now())
+
+  shares SettlementShare[]
+}
+
+enum SettlementStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+model SettlementShare {
+  id            String      @id @default(cuid())
+  settlementId  String
+  settlement    Settlement  @relation(fields: [settlementId], references: [id])
+  userId        String
+  user          User        @relation(fields: [userId], references: [id])
+  menuAmount    Int
+  deliverySplit Int
+  totalAmount   Int
+  status        ShareStatus @default(PENDING)
+  paidAt        DateTime?
+
+  @@unique([settlementId, userId])
+}
+
+enum ShareStatus {
+  PENDING
+  REQUESTED
+  PAID
+  CONFIRMED
+}
+
+model ChatMessage {
+  id        String      @id @default(cuid())
+  roomId    String
+  room      Room        @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?       @relation(fields: [userId], references: [id])
+  content   String
+  type      MessageType @default(USER)
+  createdAt DateTime    @default(now())
+}
+
+enum MessageType {
+  USER
+  SYSTEM
+}
