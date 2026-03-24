@@ -212,10 +212,19 @@ export default function Home() {
             </div>
 
             <button 
-              onClick={() => refetch()}
+              onClick={() => {
+                const savedAddress = roadAddress || jibunAddress || '현재 위치';
+                localStorage.setItem('myNeighborhood', JSON.stringify({
+                  lat: latitude,
+                  lng: longitude,
+                  address: savedAddress
+                }));
+                alert(`'${savedAddress}'(이)가 내 동네로 저장되었습니다!`);
+                refetch();
+              }}
               className="w-full bg-[#222222] hover:bg-black text-white py-3.5 rounded-xl font-bold text-[16px] transition-colors"
             >
-              이 위치로 주변상가 찾기
+              이 위치를 내 동네로 저장
             </button>
           </div>
         </div>
