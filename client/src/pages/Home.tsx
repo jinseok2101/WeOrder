@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { MapPin, RefreshCw, Search } from 'lucide-react';
+import { MapPin, RefreshCw, Search, Crosshair } from 'lucide-react';
 import { roomsApi } from '../api/rooms';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { useAuthStore } from '../store/authStore';
@@ -16,9 +16,53 @@ export default function Home() {
   const { latitude, longitude, error: geoError, setLocation } = useGeolocation();
   const [radius, setRadius] = useState(2);
   const [search, setSearch] = useState('');
+  const [roadAddress, setRoadAddress] = useState('');
+  const [jibunAddress, setJibunAddress] = useState('');
 
   const mapRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
+  const infoWindowRef = useRef<any>(null);
+
+  const fetchAddress = (lat: number, lng: number) => {
+    const naver = (window as any).naver;
+    if (!naver || !naver.maps || !naver.maps.Service) {
+      setRoadAddress('API 설정에서 Geocoder가 누락되었거나 로드되지 않았습니다.');
+      return;
+    }
+    
+    naver.maps.Service.reverseGeocode({
+      coords: new naver.maps.LatLng(lat, lng),
+    }, function(status: any, response: any) {
+      if (status !== naver.maps.Service.Status.OK) {
+        setRoadAddress('주소를 찾을 수 없는 곳이에요.');
+        setJibunAddress('');
+        return;
+      }
+      const address = response.v2.address;
+      setRoadAddress(address.roadAddress || address.jibunAddress || '상세 주소를 알 수 없어요');
+      setJibunAddress(address.roadAddress ? address.jibunAddress : '');
+    });
+  };
+
+  const handleFindMe = async () => {
+    setRoadAddress('현재 위치 찾는 중...');
+    try {
+      const res = await fetch('https://get.geojs.io/v1/ip/geo.json');
+      const data = await res.json();
+      const lat = parseFloat(data.latitude);
+      const lng = parseFloat(data.longitude);
+      setLocation(lat, lng);
+      
+      const naver = (window as any).naver;
+      if (naver && mapRef.current) {
+        const center = new naver.maps.LatLng(lat, lng);
+        mapRef.current.panTo(center);
+        fetchAddress(lat, lng);
+      }
+    } catch (e) {
+      setRoadAddress('위치를 가져오지 못했어요.');
+    }
+  };
 
   useEffect(() => {
     if (!latitude || !longitude || typeof window === 'undefined' || mapRef.current) return;
@@ -35,23 +79,42 @@ export default function Home() {
       
       mapRef.current = new naver.maps.Map('map', {
         center,
-        zoom: 15,
+        zoom: 16,
       });
 
       markerRef.current = new naver.maps.Marker({
         position: center,
         map: mapRef.current,
-        draggable: true,
+        // 배민 스타일처럼 마커 자체는 움직이지 못하게 (오직 지도만 드래그)
+        draggable: false, 
       });
 
-      naver.maps.Event.addListener(mapRef.current, 'click', (e: any) => {
-        setLocation(e.coord.lat(), e.coord.lng());
-        markerRef.current.setPosition(e.coord);
+      infoWindowRef.current = new naver.maps.InfoWindow({
+        content: '<div style="background: #222; color: #fff; padding: 10px 14px; border-radius: 8px; font-size: 13px; font-weight: bold; position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: -5px;">표시된 위치가 맞나요?<div style="position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid #222;"></div></div>',
+        borderWidth: 0,
+        backgroundColor: "transparent",
+        disableAnchor: true,
+        pixelOffset: new naver.maps.Point(0, -10)
       });
 
-      naver.maps.Event.addListener(markerRef.current, 'dragend', (e: any) => {
-        setLocation(e.coord.lat(), e.coord.lng());
-        mapRef.current.panTo(e.coord);
+      fetchAddress(latitude, longitude);
+      infoWindowRef.current.open(mapRef.current, markerRef.current);
+
+      naver.maps.Event.addListener(mapRef.current, 'dragstart', () => {
+        infoWindowRef.current.close();
+      });
+
+      // 지도를 움직이는 동안 마커도 중앙에 꽂힌 채로 따라가게 효과
+      naver.maps.Event.addListener(mapRef.current, 'drag', () => {
+        markerRef.current.setPosition(mapRef.current.getCenter());
+      });
+
+      naver.maps.Event.addListener(mapRef.current, 'idle', () => {
+        const newCenter = mapRef.current.getCenter();
+        markerRef.current.setPosition(newCenter);
+        setLocation(newCenter.lat(), newCenter.lng());
+        fetchAddress(newCenter.lat(), newCenter.lng());
+        infoWindowRef.current.open(mapRef.current, markerRef.current);
       });
     };
 
@@ -92,44 +155,50 @@ export default function Home() {
       />
 
       <div className="px-4 pt-4 pb-2">
-        <div className="bg-white rounded-2xl border border-gray-100 p-4 mb-3">
-          <div className="flex items-start gap-2 text-sm text-gray-600 mb-3">
-            <MapPin size={15} className="text-primary-500 mt-0.5 flex-shrink-0" />
-            <div className="min-w-0">
-              <p className="font-medium text-gray-800">
-                안녕하세요, <span className="text-primary-600">{user?.nickname}</span>님!
-              </p>
-              {geoError ? (
-                <p className="text-xs text-amber-500 mt-0.5">{geoError}</p>
-              ) : latitude ? (
-                <p className="text-xs text-gray-400 mt-0.5">내 위치를 확인하고 수정할 수 있어요</p>
-              ) : (
-                <p className="text-xs text-gray-400 mt-0.5">위치 확인 중...</p>
-              )}
-            </div>
+        <div className="flex items-center gap-2 mb-3 px-1">
+          <p className="font-medium text-gray-800 text-[15px]">
+            안녕하세요, <span className="text-primary-600">{user?.nickname}</span>님!
+          </p>
+        </div>
+
+        <div className="rounded-2xl overflow-hidden shadow-sm flex flex-col z-0 relative mb-4">
+          <div style={{ height: '320px', width: '100%', zIndex: 0 }} className="relative bg-[#eee]">
+            <div id="map" style={{ width: '100%', height: '100%' }}></div>
+            
+            <button
+              onClick={handleFindMe}
+              className="absolute bottom-5 right-4 z-10 w-11 h-11 bg-white rounded-full shadow-lg flex items-center justify-center border border-gray-200 hover:bg-gray-50 transition-colors"
+              style={{ zIndex: 100 }}
+            >
+              <Crosshair size={22} className="text-gray-700" />
+            </button>
           </div>
 
-          {latitude && longitude && (
-            <div className="rounded-xl overflow-hidden border border-gray-200 mb-4 flex flex-col z-0 relative">
-              <div style={{ height: '200px', width: '100%', zIndex: 0 }}>
-                <div id="map" style={{ width: '100%', height: '100%' }}></div>
-              </div>
-              <div className="bg-gray-50 px-2 py-1.5 text-xs text-gray-500 text-center border-t border-gray-200">
-                👆 <b>지도 터치</b> 또는 <b>마커 드래그</b>로 내 위치를 고칠 수 있어요!
-              </div>
+          <div className="bg-white p-5 border-x border-b border-gray-200">
+            <div className="mb-4 min-h-[50px]">
+              <h3 className="font-bold text-[18px] text-gray-900 leading-tight">
+                {roadAddress || jibunAddress || (latitude ? '주소를 찾는 중...' : '위치를 찾는 중...')}
+              </h3>
+              {roadAddress && jibunAddress && roadAddress !== jibunAddress && (
+                <p className="text-[14px] text-gray-400 mt-1">{jibunAddress}</p>
+              )}
             </div>
-          )}
+            
+            <div className="bg-[#FFF0F0] rounded-xl p-3 mb-4 text-center">
+              <p className="text-[14px] text-[#FF5A5F] font-medium tracking-tight">
+                지도의 표시와 실제 주소가 맞는지 확인해주세요.
+              </p>
+            </div>
 
-          <div className="mt-3">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-gray-500 font-medium">반경</span>
-              <span className="text-xs font-bold text-primary-600">{radius}km</span>
+            <div className="flex items-center justify-between mb-2 mt-2">
+               <span className="text-xs text-gray-500 font-medium">배달방 탐색 반경</span>
+               <span className="text-xs font-bold text-primary-600">{radius}km</span>
             </div>
-            <div className="flex gap-1.5">
+            <div className="flex gap-1.5 mb-5">
               {RADIUS_OPTIONS.map((r) => (
                 <button
                   key={r}
-                  onClick={() => setRadius(r)}
+                  onClick={() => { setRadius(r); refetch(); }}
                   className={cn(
                     'flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors',
                     radius === r
@@ -141,6 +210,13 @@ export default function Home() {
                 </button>
               ))}
             </div>
+
+            <button 
+              onClick={() => refetch()}
+              className="w-full bg-[#222222] hover:bg-black text-white py-3.5 rounded-xl font-bold text-[16px] transition-colors"
+            >
+              이 위치로 주변상가 찾기
+            </button>
           </div>
         </div>
 
