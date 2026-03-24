@@ -25,35 +25,26 @@ export function useGeolocation() {
   }, []);
 
   useEffect(() => {
-    if (!navigator.geolocation) {
-      setState((prev) => ({
-        ...prev,
-        error: '위치 서비스를 지원하지 않는 브라우저입니다.',
-        loading: false,
-      }));
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
+    // 1. 귀찮은 권한 팝업 없이 IP 주소 기반으로 조용히 위치를 추적합니다.
+    fetch('https://get.geojs.io/v1/ip/geo.json')
+      .then((res) => res.json())
+      .then((data) => {
         setState({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
+          latitude: parseFloat(data.latitude),
+          longitude: parseFloat(data.longitude),
           error: null,
           loading: false,
         });
-      },
-      (err) => {
-        alert('위치 정보를 가져올 수 없습니다.\n\n* 모바일 브라우저는 보안(HTTPS) 연결이 아닐 경우 위치 접근을 자동으로 차단합니다.\n* 테스트를 위해 기본 위치(서울)로 설정됩니다.');
+      })
+      .catch(() => {
+        // 2. 만약 IP 추적이 실패하더라도 앱이 멈추지 않고 서울을 가리키도록 방어합니다.
         setState({
           latitude: 37.5665,
           longitude: 126.978,
-          error: '위치 접근이 거부되었습니다. 서울 중심 좌표로 설정합니다.',
+          error: '네트워크 문제로 대략적 위치를 찾지 못했습니다. 서울 중심부로 설정됩니다.',
           loading: false,
         });
-      },
-      { timeout: 5000, enableHighAccuracy: false }
-    );
+      });
   }, []);
 
   return { ...state, setLocation };
