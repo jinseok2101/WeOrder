@@ -21,31 +21,41 @@ export default function Home() {
   const markerRef = useRef<any>(null);
 
   useEffect(() => {
-    const naver = (window as any).naver;
-    if (!latitude || !longitude || typeof window === 'undefined' || !naver || mapRef.current) return;
+    if (!latitude || !longitude || typeof window === 'undefined' || mapRef.current) return;
 
-    const center = new naver.maps.LatLng(latitude, longitude);
-    
-    mapRef.current = new naver.maps.Map('map', {
-      center,
-      zoom: 15,
-    });
+    const initMap = () => {
+      const naver = (window as any).naver;
+      // 네이버 지도가 아직 준비되지 않았다면 0.1초 뒤에 다시 시도 (에러 방어)
+      if (!naver || !naver.maps) {
+        setTimeout(initMap, 100);
+        return;
+      }
 
-    markerRef.current = new naver.maps.Marker({
-      position: center,
-      map: mapRef.current,
-      draggable: true,
-    });
+      const center = new naver.maps.LatLng(latitude, longitude);
+      
+      mapRef.current = new naver.maps.Map('map', {
+        center,
+        zoom: 15,
+      });
 
-    naver.maps.Event.addListener(mapRef.current, 'click', (e: any) => {
-      setLocation(e.coord.lat(), e.coord.lng());
-      markerRef.current.setPosition(e.coord);
-    });
+      markerRef.current = new naver.maps.Marker({
+        position: center,
+        map: mapRef.current,
+        draggable: true,
+      });
 
-    naver.maps.Event.addListener(markerRef.current, 'dragend', (e: any) => {
-      setLocation(e.coord.lat(), e.coord.lng());
-      mapRef.current.panTo(e.coord);
-    });
+      naver.maps.Event.addListener(mapRef.current, 'click', (e: any) => {
+        setLocation(e.coord.lat(), e.coord.lng());
+        markerRef.current.setPosition(e.coord);
+      });
+
+      naver.maps.Event.addListener(markerRef.current, 'dragend', (e: any) => {
+        setLocation(e.coord.lat(), e.coord.lng());
+        mapRef.current.panTo(e.coord);
+      });
+    };
+
+    initMap();
   }, [latitude, longitude, setLocation]);
 
   const { data: rooms = [], isLoading, refetch } = useQuery({
