@@ -9,7 +9,7 @@ import Header from '../components/layout/Header';
 import BottomNav from '../components/layout/BottomNav';
 import RoomCard from '../components/room/RoomCard';
 import { cn } from '../lib/utils';
-import { NaverMap, Marker } from 'react-naver-maps';
+import { Container as MapDiv, NaverMap, Marker } from 'react-naver-maps';
 
 const RADIUS_OPTIONS = [0.5, 1, 2, 3, 5];
 
@@ -73,9 +73,10 @@ export default function Home() {
           {latitude && longitude && (
             <div className="rounded-xl overflow-hidden border border-gray-200 mb-4 flex flex-col z-0 relative">
               <div style={{ height: '200px', width: '100%', zIndex: 0 }}>
+                {/* @ts-ignore */}
+                <MapDiv style={{ width: '100%', height: '100%' }}>
                   {/* @ts-ignore */}
                   <NaverMap
-                    style={{ width: '100%', height: '100%' }}
                     defaultCenter={{ lat: latitude, lng: longitude }}
                     defaultZoom={15}
                     onClick={(e: any) => setLocation(e.coord.lat(), e.coord.lng())}
@@ -87,6 +88,7 @@ export default function Home() {
                       onDragend={(e: any) => setLocation(e.coord.lat(), e.coord.lng())}
                     />
                   </NaverMap>
+                </MapDiv>
               </div>
               <div className="bg-gray-50 px-2 py-1.5 text-xs text-gray-500 text-center border-t border-gray-200">
                 👆 <b>지도 터치</b> 또는 <b>마커 드래그</b>로 내 위치를 고칠 수 있어요!
