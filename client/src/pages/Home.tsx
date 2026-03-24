@@ -1,5 +1,4 @@
-// @ts-nocheck
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MapPin, RefreshCw, Search } from 'lucide-react';
 import { roomsApi } from '../api/rooms';
@@ -9,7 +8,6 @@ import Header from '../components/layout/Header';
 import BottomNav from '../components/layout/BottomNav';
 import RoomCard from '../components/room/RoomCard';
 import { cn } from '../lib/utils';
-import { Container as MapDiv, NaverMap, Marker } from 'react-naver-maps';
 
 const RADIUS_OPTIONS = [0.5, 1, 2, 3, 5];
 
@@ -18,6 +16,37 @@ export default function Home() {
   const { latitude, longitude, error: geoError, setLocation } = useGeolocation();
   const [radius, setRadius] = useState(2);
   const [search, setSearch] = useState('');
+
+  const mapRef = useRef<any>(null);
+  const markerRef = useRef<any>(null);
+
+  useEffect(() => {
+    const naver = (window as any).naver;
+    if (!latitude || !longitude || typeof window === 'undefined' || !naver || mapRef.current) return;
+
+    const center = new naver.maps.LatLng(latitude, longitude);
+    
+    mapRef.current = new naver.maps.Map('map', {
+      center,
+      zoom: 15,
+    });
+
+    markerRef.current = new naver.maps.Marker({
+      position: center,
+      map: mapRef.current,
+      draggable: true,
+    });
+
+    naver.maps.Event.addListener(mapRef.current, 'click', (e: any) => {
+      setLocation(e.coord.lat(), e.coord.lng());
+      markerRef.current.setPosition(e.coord);
+    });
+
+    naver.maps.Event.addListener(markerRef.current, 'dragend', (e: any) => {
+      setLocation(e.coord.lat(), e.coord.lng());
+      mapRef.current.panTo(e.coord);
+    });
+  }, [latitude, longitude, setLocation]);
 
   const { data: rooms = [], isLoading, refetch } = useQuery({
     queryKey: ['rooms', latitude, longitude, radius],
@@ -73,22 +102,7 @@ export default function Home() {
           {latitude && longitude && (
             <div className="rounded-xl overflow-hidden border border-gray-200 mb-4 flex flex-col z-0 relative">
               <div style={{ height: '200px', width: '100%', zIndex: 0 }}>
-                {/* @ts-ignore */}
-                <MapDiv style={{ width: '100%', height: '100%' }}>
-                  {/* @ts-ignore */}
-                  <NaverMap
-                    defaultCenter={{ lat: latitude, lng: longitude }}
-                    defaultZoom={15}
-                    onClick={(e: any) => setLocation(e.coord.lat(), e.coord.lng())}
-                  >
-                    {/* @ts-ignore */}
-                    <Marker
-                      position={{ lat: latitude, lng: longitude }}
-                      draggable={true}
-                      onDragend={(e: any) => setLocation(e.coord.lat(), e.coord.lng())}
-                    />
-                  </NaverMap>
-                </MapDiv>
+                <div id="map" style={{ width: '100%', height: '100%' }}></div>
               </div>
               <div className="bg-gray-50 px-2 py-1.5 text-xs text-gray-500 text-center border-t border-gray-200">
                 👆 <b>지도 터치</b> 또는 <b>마커 드래그</b>로 내 위치를 고칠 수 있어요!
