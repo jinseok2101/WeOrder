@@ -8,44 +8,7 @@ import Header from '../components/layout/Header';
 import BottomNav from '../components/layout/BottomNav';
 import RoomCard from '../components/room/RoomCard';
 import { cn } from '../lib/utils';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-// @ts-ignore
-import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
-// @ts-ignore
-import markerIcon from 'leaflet/dist/images/marker-icon.png';
-// @ts-ignore
-import markerShadow from 'leaflet/dist/images/marker-shadow.png';
-
-// Leaflet 기본 마커 아이콘 설정 오류 해결
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconUrl: markerIcon,
-  iconRetinaUrl: markerIcon2x,
-  shadowUrl: markerShadow,
-});
-
-function LocationMarker({ lat, lng, onLocationChange }: { lat: number; lng: number; onLocationChange: (lat: number, lng: number) => void }) {
-  useMapEvents({
-    click(e) {
-      onLocationChange(e.latlng.lat, e.latlng.lng);
-    },
-  });
-
-  return (
-    <Marker
-      position={[lat, lng]}
-      draggable={true}
-      eventHandlers={{
-        dragend: (e) => {
-          const pos = e.target.getLatLng();
-          onLocationChange(pos.lat, pos.lng);
-        },
-      }}
-    />
-  );
-}
+import { NavermapsProvider, Container as MapDiv, NaverMap, Marker } from 'react-naver-maps';
 
 const RADIUS_OPTIONS = [0.5, 1, 2, 3, 5];
 
@@ -108,15 +71,21 @@ export default function Home() {
 
           {latitude && longitude && (
             <div className="rounded-xl overflow-hidden border border-gray-200 mb-4 flex flex-col z-0 relative">
-              <div style={{ height: '200px', width: '100%', zIndex: 0 }}>
-                <MapContainer center={[latitude, longitude]} zoom={15} scrollWheelZoom={true} style={{ height: '100%', width: '100%' }}>
-                  <TileLayer
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                  />
-                  <LocationMarker lat={latitude} lng={longitude} onLocationChange={setLocation} />
-                </MapContainer>
-              </div>
+              <NavermapsProvider ncpClientId="2o8llg6zkn">
+                <MapDiv style={{ height: '200px', width: '100%', zIndex: 0 }}>
+                  <NaverMap
+                    defaultCenter={{ lat: latitude, lng: longitude }}
+                    defaultZoom={15}
+                    onClick={(e: any) => setLocation(e.coord.lat(), e.coord.lng())}
+                  >
+                    <Marker
+                      position={{ lat: latitude, lng: longitude }}
+                      draggable={true}
+                      onDragend={(e: any) => setLocation(e.coord.lat(), e.coord.lng())}
+                    />
+                  </NaverMap>
+                </MapDiv>
+              </NavermapsProvider>
               <div className="bg-gray-50 px-2 py-1.5 text-xs text-gray-500 text-center border-t border-gray-200">
                 👆 <b>지도 터치</b> 또는 <b>마커 드래그</b>로 내 위치를 고칠 수 있어요!
               </div>
