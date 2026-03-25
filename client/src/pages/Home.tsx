@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { MapPin, RefreshCw, Search, Crosshair } from 'lucide-react';
+import { MapPin, RefreshCw, Search, Crosshair, Home as HomeIcon, Briefcase, Plus, Trash2, Check, Edit2 } from 'lucide-react';
 import { roomsApi } from '../api/rooms';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { useAuthStore } from '../store/authStore';
@@ -18,10 +18,80 @@ export default function Home() {
   const [search, setSearch] = useState('');
   const [roadAddress, setRoadAddress] = useState('');
   const [jibunAddress, setJibunAddress] = useState('');
+  const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
+  const [activeAddressId, setActiveAddressId] = useState<string | null>(null);
 
   const mapRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
   const infoWindowRef = useRef<any>(null);
+
+  useEffect(() => {
+    const data = localStorage.getItem('weorder_addresses');
+    if (data) {
+      const parsed = JSON.parse(data);
+      setSavedAddresses(parsed);
+      const active = parsed.find((a: any) => a.isActive);
+      if (active) setActiveAddressId(active.id);
+    }
+  }, []);
+
+  const saveToStorage = (list: any[]) => {
+    localStorage.setItem('weorder_addresses', JSON.stringify(list));
+    setSavedAddresses(list);
+  };
+
+  const handleSaveAddress = () => {
+    const label = prompt('주소 별칭을 입력해주세요 (예: 우리집, 회사)', RoadName(roadAddress) || '내 동네');
+    if (label === null) return;
+
+    const newAddr = {
+      id: Math.random().toString(36).substr(2, 9),
+      label: label || '내 동네',
+      roadAddress,
+      jibunAddress,
+      lat: latitude,
+      lng: longitude,
+      isActive: true,
+      memo: '문 앞에 두고 벨 눌러주세요'
+    };
+
+    const newList = savedAddresses.map(a => ({ ...a, isActive: false })).concat(newAddr);
+    saveToStorage(newList);
+    setActiveAddressId(newAddr.id);
+    alert('새 주소가 저장되었습니다!');
+  };
+
+  const RoadName = (addr: string) => {
+    if (!addr) return '';
+    const parts = addr.split(' ');
+    return parts[parts.length - 1]; // 대략적인 도로명/동네명 추출
+  };
+
+  const selectAddress = (addr: any) => {
+    const newList = savedAddresses.map(a => ({
+      ...a,
+      isActive: a.id === addr.id
+    }));
+    saveToStorage(newList);
+    setActiveAddressId(addr.id);
+    setLocation(addr.lat, addr.lng);
+    
+    if (mapRef.current) {
+        const naver = (window as any).naver;
+        const center = new naver.maps.LatLng(addr.lat, addr.lng);
+        mapRef.current.panTo(center);
+        markerRef.current.setPosition(center);
+    }
+    fetchAddress(addr.lat, addr.lng);
+  };
+
+  const deleteAddress = (id: string, e: any) => {
+    e.stopPropagation();
+    if (!confirm('이 주소를 삭제할까요?')) return;
+    const newList = savedAddresses.filter(a => a.id !== id);
+    saveToStorage(newList);
+    if (activeAddressId === id) setActiveAddressId(newList[0]?.id || null);
+  };
 
   const fetchAddress = (lat: number, lng: number) => {
     const naver = (window as any).naver;
@@ -212,22 +282,72 @@ export default function Home() {
             </div>
 
             <button 
-              onClick={() => {
-                const savedAddress = roadAddress || jibunAddress || '현재 위치';
-                localStorage.setItem('myNeighborhood', JSON.stringify({
-                  lat: latitude,
-                  lng: longitude,
-                  address: savedAddress
-                }));
-                alert(`'${savedAddress}'(이)가 내 동네로 저장되었습니다!`);
-                refetch();
-              }}
-              className="w-full bg-[#222222] hover:bg-black text-white py-3.5 rounded-xl font-bold text-[16px] transition-colors"
+              onClick={handleSaveAddress}
+              className="w-full bg-[#222222] hover:bg-black text-white py-3.5 rounded-xl font-bold text-[16px] transition-colors flex items-center justify-center gap-2"
             >
-              이 위치를 내 동네로 저장
+              <Plus size={18} />
+              이 위치를 주소 목록에 추가
             </button>
           </div>
         </div>
+
+        {/* 배민 스타일 주소 목록 섹션 */}
+        {savedAddresses.length > 0 && (
+          <div className="bg-white rounded-2xl border border-gray-100 mb-6 overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-50 flex items-center justify-between">
+              <h3 className="text-sm font-bold text-gray-800">저장된 주소지</h3>
+              <Edit2 size={14} className="text-gray-400" />
+            </div>
+            <div className="divide-y divide-gray-50">
+              {savedAddresses.map((addr) => (
+                <div 
+                  key={addr.id}
+                  onClick={() => selectAddress(addr)}
+                  className={cn(
+                    "px-4 py-4 flex items-start gap-3 transition-colors active:bg-gray-50",
+                    activeAddressId === addr.id ? "bg-primary-50/30" : ""
+                  )}
+                >
+                  <div className={cn(
+                    "w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5",
+                    activeAddressId === addr.id ? "bg-primary-500 text-white" : "bg-gray-100 text-gray-500"
+                  )}>
+                    {addr.label.includes('집') ? <HomeIcon size={18} /> : 
+                     addr.label.includes('회사') || addr.label.includes('일') ? <Briefcase size={18} /> : 
+                     <MapPin size={18} />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="font-bold text-[15px] truncate text-gray-900">{addr.label}</span>
+                      {activeAddressId === addr.id && (
+                        <span className="bg-blue-50 text-blue-500 text-[10px] font-bold px-1.5 py-0.5 rounded border border-blue-100">
+                          현재 설정된 주소
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[13px] text-gray-500 truncate mb-0.5">{addr.roadAddress}</p>
+                    <p className="text-[11.5px] text-gray-400 leading-tight">
+                      {addr.memo || '문 앞에 두고 벨 눌러주세요'}
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-end gap-3 ml-2">
+                    {activeAddressId === addr.id ? (
+                      <Check size={20} className="text-primary-500" />
+                    ) : (
+                      <div className="w-5 h-5" />
+                    )}
+                    <button 
+                      onClick={(e) => deleteAddress(addr.id, e)}
+                      className="p-1 hover:bg-red-50 text-gray-300 hover:text-red-400 rounded transition-colors"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="relative mb-4">
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
