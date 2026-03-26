@@ -13,7 +13,8 @@ function SettlementIndicator({ room, userId }: { room: Room; userId: string }) {
   if (!room.settlement) return null;
 
   const myShare = room.settlement.shares.find((s) => s.userId === userId);
-  if (!myShare) return null;
+  const isHost = room.hostId === userId;
+  if (!myShare || isHost) return null;
 
   if (myShare.status === 'CONFIRMED') {
     return (
