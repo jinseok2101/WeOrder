@@ -97,6 +97,11 @@ export default function CreateRoom() {
     if (!form.minimumOrder) return setError('최소주문금액을 입력해주세요.');
     if (!form.deadline) return setError('마감 시간을 설정해주세요.');
     
+    // 마감 시간이 현재 시간보다 이전인지 체크
+    if (new Date(form.deadline).getTime() < Date.now()) {
+      return setError('마감 시간은 현재 시간 이후로 설정해주세요.');
+    }
+    
     // 수정 시에는 기존 좌표를 유지하므로 위치 정보 체크를 건너뛸 수 있음
     if (!isEdit && (!latitude || !longitude)) return setError('위치 정보를 가져오는 중입니다. 잠시 후 다시 시도해주세요.');
 
@@ -262,8 +267,7 @@ export default function CreateRoom() {
               type="datetime-local"
               value={form.deadline}
               onChange={(e) => update('deadline', e.target.value)}
-              min={new Date().toISOString().slice(0, 16)}
-              defaultValue={getDefaultDeadline()}
+              min={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
               className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </InputField>
