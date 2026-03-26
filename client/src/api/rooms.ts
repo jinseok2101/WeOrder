@@ -26,6 +26,8 @@ export const roomsApi = {
   mine: () => api.get<Room[]>('/rooms/mine').then((r) => r.data),
   create: (data: CreateRoomPayload) =>
     api.post<Room>('/rooms', data).then((r) => r.data),
+  update: (id: string, data: Partial<CreateRoomPayload>) =>
+    api.patch<Room>(`/rooms/${id}`, data).then((r) => r.data),
   get: (id: string) => api.get<Room>(`/rooms/${id}`).then((r) => r.data),
   join: (id: string) =>
     api.post<{ message: string }>(`/rooms/${id}/join`).then((r) => r.data),

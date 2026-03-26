@@ -43,6 +43,14 @@ export default function App() {
           }
         />
         <Route
+          path="/rooms/:id/edit"
+          element={
+            <ProtectedRoute>
+              <CreateRoom />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/rooms/:id"
           element={
             <ProtectedRoute>

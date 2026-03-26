@@ -156,6 +156,46 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
   }
 });
 
+router.patch('/:id', authenticate, async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      title,
+      restaurantName,
+      restaurantUrl,
+      maxMembers,
+      deliveryFee,
+      minimumOrder,
+      radiusKm,
+      deadline,
+    } = req.body;
+
+    const room = await prisma.room.findUnique({ where: { id } });
+    if (!room) return res.status(404).json({ message: '방을 찾을 수 없습니다.' });
+    if (room.hostId !== req.userId) return res.status(403).json({ message: '방장만 수정할 수 있습니다.' });
+
+    const updated = await prisma.room.update({
+      where: { id },
+      data: {
+        title,
+        restaurantName,
+        restaurantUrl,
+        maxMembers: maxMembers ? Number(maxMembers) : undefined,
+        deliveryFee: deliveryFee ? Number(deliveryFee) : undefined,
+        minimumOrder: minimumOrder ? Number(minimumOrder) : undefined,
+        radiusKm: radiusKm ? Number(radiusKm) : undefined,
+        deadline: deadline ? new Date(deadline) : undefined,
+      },
+      include: roomDetailInclude(),
+    });
+
+    getIo().to(id).emit('room:updated', updated);
+    res.json(updated);
+  } catch {
+    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+  }
+});
+
 router.get('/:id', authenticate, async (req: AuthRequest, res) => {
   try {
     const room = await prisma.room.findUnique({

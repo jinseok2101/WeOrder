@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useMutation } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { Info } from 'lucide-react';
 import { roomsApi, CreateRoomPayload } from '../api/rooms';
 import { useGeolocation } from '../hooks/useGeolocation';
@@ -26,6 +26,8 @@ function InputField({
 }
 
 export default function CreateRoom() {
+  const { id } = useParams<{ id: string }>();
+  const isEdit = !!id;
   const navigate = useNavigate();
   const { latitude, longitude } = useGeolocation();
 
@@ -41,13 +43,35 @@ export default function CreateRoom() {
   });
   const [error, setError] = useState('');
 
+  const { data: roomData, isLoading: isFetching } = useQuery({
+    queryKey: ['room', id],
+    queryFn: () => roomsApi.get(id!),
+    enabled: isEdit,
+  });
+
+  useEffect(() => {
+    if (isEdit && roomData) {
+      setForm({
+        title: roomData.title,
+        restaurantName: roomData.restaurantName,
+        restaurantUrl: roomData.restaurantUrl || '',
+        maxMembers: String(roomData.maxMembers),
+        deliveryFee: String(roomData.deliveryFee),
+        minimumOrder: String(roomData.minimumOrder),
+        radiusKm: String(roomData.radiusKm),
+        deadline: new Date(roomData.deadline).toISOString().slice(0, 16),
+      });
+    }
+  }, [isEdit, roomData]);
+
   const mutation = useMutation({
-    mutationFn: (data: CreateRoomPayload) => roomsApi.create(data),
+    mutationFn: (data: CreateRoomPayload) => 
+      isEdit ? roomsApi.update(id!, data) : roomsApi.create(data),
     onSuccess: (room) => navigate(`/rooms/${room.id}`, { replace: true }),
     onError: (err: unknown) => {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        '방 생성에 실패했습니다.';
+        `방 ${isEdit ? '수정' : '생성'}에 실패했습니다.`;
       setError(msg);
     },
   });
@@ -68,7 +92,9 @@ export default function CreateRoom() {
     if (!form.deliveryFee) return setError('배달비를 입력해주세요.');
     if (!form.minimumOrder) return setError('최소주문금액을 입력해주세요.');
     if (!form.deadline) return setError('마감 시간을 설정해주세요.');
-    if (!latitude || !longitude) return setError('위치 정보를 가져오는 중입니다. 잠시 후 다시 시도해주세요.');
+    
+    // 수정 시에는 기존 좌표를 유지하므로 위치 정보 체크를 건너뛸 수 있음
+    if (!isEdit && (!latitude || !longitude)) return setError('위치 정보를 가져오는 중입니다. 잠시 후 다시 시도해주세요.');
 
     mutation.mutate({
       title: form.title.trim(),
@@ -78,8 +104,8 @@ export default function CreateRoom() {
       deliveryFee: parseInt(form.deliveryFee),
       minimumOrder: parseInt(form.minimumOrder),
       radiusKm: parseFloat(form.radiusKm),
-      latitude,
-      longitude,
+      latitude: latitude || (isEdit ? roomData?.latitude ?? 0 : 0),
+      longitude: longitude || (isEdit ? roomData?.longitude ?? 0 : 0),
       deadline: new Date(form.deadline).toISOString(),
     });
   };
@@ -92,9 +118,18 @@ export default function CreateRoom() {
       ? Math.ceil(parseInt(form.deliveryFee) / parseInt(form.maxMembers))
       : 0;
 
+  if (isEdit && (isFetching || !roomData)) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header title="정보 불러오는 중..." showBack showHome />
+        <div className="p-10 text-center text-gray-400">정보를 불러오는 중입니다...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 pb-10">
-      <Header title="방 만들기" showBack showHome />
+      <Header title={isEdit ? "방 정보 수정" : "방 만들기"} showBack showHome />
 
       <form onSubmit={handleSubmit} className="px-4 pt-4 space-y-5">
         <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-4">
@@ -244,7 +279,7 @@ export default function CreateRoom() {
             mutation.isPending && 'opacity-60 cursor-not-allowed'
           )}
         >
-          {mutation.isPending ? '방 만드는 중...' : '방 만들기'}
+          {mutation.isPending ? (isEdit ? '수정 중...' : '방 만드는 중...') : (isEdit ? '수정 완료' : '방 만들기')}
         </button>
       </form>
     </div>

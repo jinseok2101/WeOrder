@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Users, ExternalLink, ChevronDown } from 'lucide-react';
+import { Users, ExternalLink, ChevronDown, Edit2 } from 'lucide-react';
 import { roomsApi } from '../api/rooms';
 import { ordersApi } from '../api/orders';
 import { useAuthStore } from '../store/authStore';
@@ -173,6 +173,13 @@ export default function RoomDetail() {
               className="text-sm text-gray-400 hover:text-gray-600 px-2 py-1"
             >
               나가기
+            </button>
+          ) : isHost ? (
+            <button
+              onClick={() => navigate(`/rooms/${id}/edit`)}
+              className="p-2 text-gray-400 hover:text-primary-500 transition-colors"
+            >
+              <Edit2 size={18} />
             </button>
           ) : null
         }
