@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { MapPin, RefreshCw, Search, Crosshair, Home as HomeIcon, Briefcase, Plus, Trash2, Check, Edit2 } from 'lucide-react';
 import { roomsApi } from '../api/rooms';
@@ -12,6 +13,7 @@ import { cn } from '../lib/utils';
 const RADIUS_OPTIONS = [0.5, 1, 2, 3, 5];
 
 export default function Home() {
+  const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const { latitude, longitude, error: geoError, setLocation } = useGeolocation();
   const [radius, setRadius] = useState(2);
@@ -215,10 +217,10 @@ export default function Home() {
         showLogout
         right={
           <button
-            onClick={() => refetch()}
+            onClick={() => navigate('/')}
             className="p-2 rounded-full hover:bg-gray-100 transition-colors"
           >
-            <RefreshCw size={17} className="text-gray-500" />
+            <HomeIcon size={18} className="text-gray-500" />
           </button>
         }
       />
