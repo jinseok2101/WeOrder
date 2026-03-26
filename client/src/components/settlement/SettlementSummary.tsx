@@ -119,10 +119,12 @@ export default function SettlementSummary({
                 </div>
                 <div className="text-right">
                   <p className="font-bold text-gray-900">{formatCurrency(share.totalAmount)}</p>
-                  <div className={cn('flex items-center gap-1 text-xs justify-end mt-0.5', statusConf.className)}>
-                    {statusConf.icon}
-                    <span>{statusConf.label}</span>
-                  </div>
+                  {share.userId !== hostId && (
+                    <div className={cn('flex items-center gap-1 text-xs justify-end mt-0.5', statusConf.className)}>
+                      {statusConf.icon}
+                      <span>{statusConf.label}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
