@@ -52,7 +52,6 @@ export default function Home() {
       lat: latitude,
       lng: longitude,
       isActive: true,
-      memo: '문 앞에 두고 벨 눌러주세요'
     };
 
     const newList = savedAddresses.map(a => ({ ...a, isActive: false })).concat(newAddr);
@@ -326,9 +325,6 @@ export default function Home() {
                       )}
                     </div>
                     <p className="text-[13px] text-gray-500 truncate mb-0.5">{addr.roadAddress}</p>
-                    <p className="text-[11.5px] text-gray-400 leading-tight">
-                      {addr.memo || '문 앞에 두고 벨 눌러주세요'}
-                    </p>
                   </div>
                   <div className="flex flex-col items-end gap-3 ml-2">
                     {activeAddressId === addr.id ? (
