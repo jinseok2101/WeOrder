@@ -51,6 +51,9 @@ export default function CreateRoom() {
 
   useEffect(() => {
     if (isEdit && roomData) {
+      const d = new Date(roomData.deadline);
+      const localISO = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+      
       setForm({
         title: roomData.title,
         restaurantName: roomData.restaurantName,
@@ -59,7 +62,7 @@ export default function CreateRoom() {
         deliveryFee: String(roomData.deliveryFee),
         minimumOrder: String(roomData.minimumOrder),
         radiusKm: String(roomData.radiusKm),
-        deadline: new Date(roomData.deadline).toISOString().slice(0, 16),
+        deadline: localISO,
       });
     }
   }, [isEdit, roomData]);
@@ -80,7 +83,8 @@ export default function CreateRoom() {
     const d = new Date();
     d.setHours(d.getHours() + 1);
     d.setMinutes(Math.ceil(d.getMinutes() / 5) * 5, 0, 0);
-    return d.toISOString().slice(0, 16);
+    // 로컬 시간 기준으로 YYYY-MM-DDTHH:mm 포맷 생성
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
