@@ -114,7 +114,7 @@ export default function RoomDetail() {
   if (isLoading || !room) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header title="로딩 중..." showBack />
+        <Header title="로딩 중..." showBack showHome />
         <div className="p-4 space-y-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="bg-white rounded-2xl h-24 animate-pulse border border-gray-100" />
@@ -155,6 +155,7 @@ export default function RoomDetail() {
       <Header
         title={room.restaurantName}
         showBack
+        showHome
         right={
           !isMember && canJoin ? (
             <button

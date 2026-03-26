@@ -1,15 +1,16 @@
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, LogOut } from 'lucide-react';
+import { ArrowLeft, LogOut, Home as HomeIcon } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 
 interface HeaderProps {
   title: string;
   showBack?: boolean;
+  showHome?: boolean; // 홈 버튼 추가
   showLogout?: boolean;
   right?: React.ReactNode;
 }
 
-export default function Header({ title, showBack = false, showLogout = false, right }: HeaderProps) {
+export default function Header({ title, showBack = false, showHome = false, showLogout = false, right }: HeaderProps) {
   const navigate = useNavigate();
   const logout = useAuthStore((s) => s.logout);
 
@@ -22,6 +23,14 @@ export default function Header({ title, showBack = false, showLogout = false, ri
             className="p-2 -ml-2 rounded-full hover:bg-gray-100 transition-colors"
           >
             <ArrowLeft size={20} className="text-gray-700" />
+          </button>
+        )}
+        {showHome && (
+          <button
+            onClick={() => navigate('/')}
+            className="p-2 -ml-2 rounded-full hover:bg-gray-100 transition-colors"
+          >
+            <HomeIcon size={20} className="text-gray-700" />
           </button>
         )}
         <h1 className="font-bold text-gray-900 text-lg truncate">{title}</h1>

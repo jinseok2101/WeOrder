@@ -94,7 +94,7 @@ export default function CreateRoom() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-10">
-      <Header title="방 만들기" showBack />
+      <Header title="방 만들기" showBack showHome />
 
       <form onSubmit={handleSubmit} className="px-4 pt-4 space-y-5">
         <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-4">
