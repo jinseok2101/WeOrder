@@ -48,8 +48,15 @@ export default function MyOrders() {
     queryFn: roomsApi.mine,
   });
 
-  const active = rooms.filter((r) => ['OPEN', 'ORDERING', 'ORDERED'].includes(r.status));
-  const past = rooms.filter((r) => ['SETTLED', 'CANCELLED'].includes(r.status));
+  const now = Date.now();
+  const active = rooms.filter((r) => {
+    const isExpired = new Date(r.deadline).getTime() < now;
+    return ['OPEN', 'ORDERING', 'ORDERED'].includes(r.status) && !isExpired;
+  });
+  const past = rooms.filter((r) => {
+    const isExpired = new Date(r.deadline).getTime() < now;
+    return ['SETTLED', 'CANCELLED'].includes(r.status) || isExpired;
+  });
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
@@ -104,7 +111,7 @@ export default function MyOrders() {
 
         {past.length > 0 && (
           <section>
-            <h2 className="font-bold text-gray-700 text-sm mb-3">이전 주문</h2>
+            <h2 className="font-bold text-gray-700 text-sm mb-3">마감됨</h2>
             <div className="space-y-3">
               {past.map((room) => (
                 <button
