@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { MapPin, RefreshCw, Search, Crosshair, Home as HomeIcon, Briefcase, Plus, Trash2, Check, Edit2 } from 'lucide-react';
+import { MapPin, Search, Crosshair, Home as HomeIcon, Briefcase, Plus, Trash2, Check, Edit2 } from 'lucide-react';
 import { roomsApi } from '../api/rooms';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { useAuthStore } from '../store/authStore';
@@ -215,14 +215,7 @@ export default function Home() {
       <Header
         title="WeOrder"
         showLogout
-        right={
-          <button
-            onClick={() => navigate('/')}
-            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-          >
-            <HomeIcon size={18} className="text-gray-500" />
-          </button>
-        }
+        showHome
       />
 
       <div className="px-4 pt-4 pb-2">

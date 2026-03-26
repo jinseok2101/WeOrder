@@ -25,17 +25,17 @@ export default function Header({ title, showBack = false, showHome = false, show
             <ArrowLeft size={20} className="text-gray-700" />
           </button>
         )}
-        {showHome && (
-          <button
-            onClick={() => navigate('/')}
-            className="p-2 -ml-2 rounded-full hover:bg-gray-100 transition-colors"
-          >
-            <HomeIcon size={20} className="text-gray-700" />
-          </button>
-        )}
         <h1 className="font-bold text-gray-900 text-lg truncate">{title}</h1>
       </div>
       <div className="flex items-center gap-1">
+        {showHome && (
+          <button
+            onClick={() => navigate('/')}
+            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+          >
+            <HomeIcon size={18} className="text-gray-500" />
+          </button>
+        )}
         {right}
         {showLogout && (
           <button

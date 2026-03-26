@@ -53,7 +53,7 @@ export default function MyOrders() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-      <Header title="내 주문" showLogout />
+      <Header title="내 주문" showLogout showHome />
 
       <div className="px-4 pt-4 space-y-6">
         <section>
