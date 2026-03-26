@@ -11,11 +11,21 @@ const STATUS_CONFIG: Record<RoomStatus, { label: string; className: string }> = 
 
 interface Props {
   status: RoomStatus;
+  deadline?: string | Date; // 마감 시간 추가
   className?: string;
 }
 
-export default function RoomStatusBadge({ status, className }: Props) {
-  const config = STATUS_CONFIG[status];
+export default function RoomStatusBadge({ status, deadline, className }: Props) {
+  let config = STATUS_CONFIG[status];
+
+  // 마감 시간이 지났는지 체크 (OPEN이나 ORDERING 상태일 때만)
+  if ((status === 'OPEN' || status === 'ORDERING') && deadline) {
+    const isExpired = new Date(deadline).getTime() < Date.now();
+    if (isExpired) {
+      config = { label: '마감됨', className: 'bg-gray-100 text-gray-500 line-through opacity-70' };
+    }
+  }
+
   return (
     <span
       className={cn(

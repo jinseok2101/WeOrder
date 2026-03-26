@@ -21,7 +21,7 @@ export default function RoomCard({ room }: Props) {
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <RoomStatusBadge status={room.status} />
+            <RoomStatusBadge status={room.status} deadline={room.deadline} />
             {room.distance !== null && room.distance !== undefined && (
               <span className="inline-flex items-center gap-0.5 text-xs text-gray-400">
                 <MapPin size={11} />

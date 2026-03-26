@@ -82,7 +82,7 @@ export default function MyOrders() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <RoomStatusBadge status={room.status} />
+                        <RoomStatusBadge status={room.status} deadline={room.deadline} />
                       </div>
                       <p className="font-bold text-gray-900 truncate">{room.restaurantName}</p>
                       <p className="text-sm text-gray-500 truncate">{room.title}</p>
@@ -115,7 +115,7 @@ export default function MyOrders() {
                   <div className="flex items-center justify-between">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <RoomStatusBadge status={room.status} />
+                        <RoomStatusBadge status={room.status} deadline={room.deadline} />
                       </div>
                       <p className="font-semibold text-gray-800 truncate">{room.restaurantName}</p>
                       <p className="text-xs text-gray-400 mt-0.5">{formatDate(room.deadline)}</p>

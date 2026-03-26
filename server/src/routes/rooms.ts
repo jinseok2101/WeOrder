@@ -179,6 +179,7 @@ router.post('/:id/join', authenticate, async (req: AuthRequest, res) => {
       include: { members: true },
     });
     if (!room) return res.status(404).json({ message: '방을 찾을 수 없습니다.' });
+    if (new Date() > room.deadline) return res.status(400).json({ message: '이미 마감된 방입니다.' });
     if (room.status !== 'OPEN') return res.status(400).json({ message: '현재 참여할 수 없는 방입니다.' });
     if (room.members.length >= room.maxMembers) return res.status(400).json({ message: '방이 가득 찼습니다.' });
 
@@ -316,8 +317,10 @@ router.post('/:roomId/orders', authenticate, async (req: AuthRequest, res) => {
     const allItems = await prisma.orderItem.findMany({ where: { roomId } });
     const room = await prisma.room.findUnique({
       where: { id: roomId },
-      select: { minimumOrder: true, deliveryFee: true },
+      select: { minimumOrder: true, deliveryFee: true, deadline: true },
     });
+    if (!room) return res.status(404).json({ message: '방을 찾을 수 없습니다.' });
+    if (new Date() > room.deadline) return res.status(400).json({ message: '이미 마감된 방입니다.' });
     const totals = calcOrderTotals(
       allItems,
       room?.minimumOrder || 0,

@@ -124,10 +124,11 @@ export default function RoomDetail() {
     );
   }
 
+  const isExpired = room.deadline ? new Date(room.deadline).getTime() < Date.now() : false;
   const isMember = (room.members || []).some((m) => m.userId === user?.id);
   const isHost = room.hostId === user?.id;
-  const canJoin = !isMember && room.status === 'OPEN' && (room.members?.length ?? 0) < room.maxMembers;
-  const canOrder = isMember && (room.status === 'OPEN' || room.status === 'ORDERING');
+  const canJoin = !isMember && room.status === 'OPEN' && (room.members?.length ?? 0) < room.maxMembers && !isExpired;
+  const canOrder = isMember && (room.status === 'OPEN' || room.status === 'ORDERING') && !isExpired;
   const totals = orderTotals ?? {
     totalMenuAmount: 0,
     minimumOrder: room.minimumOrder,
@@ -181,7 +182,7 @@ export default function RoomDetail() {
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <RoomStatusBadge status={room.status} />
+                <RoomStatusBadge status={room.status} deadline={room.deadline} />
                 <span className="text-xs text-gray-400 flex items-center gap-1">
                   <Users size={12} />
                   {room.members?.length ?? 0}/{room.maxMembers}명
