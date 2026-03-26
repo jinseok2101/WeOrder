@@ -43,7 +43,7 @@ export default function CreateRoom() {
 
   const mutation = useMutation({
     mutationFn: (data: CreateRoomPayload) => roomsApi.create(data),
-    onSuccess: (room) => navigate(`/rooms/${room.id}`),
+    onSuccess: (room) => navigate(`/rooms/${room.id}`, { replace: true }),
     onError: (err: unknown) => {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
