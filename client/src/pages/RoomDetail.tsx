@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Users, ExternalLink, ChevronDown, Edit2 } from 'lucide-react';
+import { Users, ExternalLink, ChevronDown, Edit2, MapPin } from 'lucide-react';
 import { roomsApi } from '../api/rooms';
 import { ordersApi } from '../api/orders';
 import { useAuthStore } from '../store/authStore';
@@ -195,6 +195,12 @@ export default function RoomDetail() {
                   <Users size={12} />
                   {room.members?.length ?? 0}/{room.maxMembers}명
                 </span>
+                {room.pickupLocation && (
+                  <span className="text-xs text-gray-500 bg-gray-100/80 rounded px-1.5 py-0.5 flex items-center gap-1 max-w-[150px] truncate">
+                    <MapPin size={10} className="flex-shrink-0" />
+                    <span className="truncate">{room.pickupLocation}</span>
+                  </span>
+                )}
               </div>
               <h2 className="font-bold text-gray-900 mt-1">{room.title}</h2>
               <p className="text-xs text-gray-400 mt-0.5">

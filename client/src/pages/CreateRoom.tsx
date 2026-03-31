@@ -38,7 +38,7 @@ export default function CreateRoom() {
     maxMembers: '4',
     deliveryFee: '',
     minimumOrder: '',
-    radiusKm: '1',
+    pickupLocation: '',
     deadline: '',
   });
   const [error, setError] = useState('');
@@ -61,7 +61,7 @@ export default function CreateRoom() {
         maxMembers: String(roomData.maxMembers),
         deliveryFee: String(roomData.deliveryFee),
         minimumOrder: String(roomData.minimumOrder),
-        radiusKm: String(roomData.radiusKm),
+        pickupLocation: roomData.pickupLocation || '',
         deadline: localISO,
       });
     }
@@ -95,6 +95,7 @@ export default function CreateRoom() {
     if (!form.restaurantName.trim()) return setError('식당 이름을 입력해주세요.');
     if (!form.deliveryFee) return setError('배달비를 입력해주세요.');
     if (!form.minimumOrder) return setError('최소주문금액을 입력해주세요.');
+    if (!form.pickupLocation.trim()) return setError('수령 장소를 입력해주세요. (예: 기숙사 정문)');
     if (!form.deadline) return setError('마감 시간을 설정해주세요.');
     
     // 마감 시간이 현재 시간보다 이전인지 체크
@@ -112,7 +113,7 @@ export default function CreateRoom() {
       maxMembers: parseInt(form.maxMembers),
       deliveryFee: parseInt(form.deliveryFee),
       minimumOrder: parseInt(form.minimumOrder),
-      radiusKm: parseFloat(form.radiusKm),
+      pickupLocation: form.pickupLocation.trim(),
       latitude: latitude || (isEdit ? roomData?.latitude ?? 0 : 0),
       longitude: longitude || (isEdit ? roomData?.longitude ?? 0 : 0),
       deadline: new Date(form.deadline).toISOString(),
@@ -242,24 +243,14 @@ export default function CreateRoom() {
             </div>
           </InputField>
 
-          <InputField label="모집 반경">
-            <div className="flex gap-2">
-              {[0.5, 1, 2, 3].map((r) => (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => update('radiusKm', String(r))}
-                  className={cn(
-                    'flex-1 py-2.5 rounded-xl text-sm font-semibold border transition-colors',
-                    parseFloat(form.radiusKm) === r
-                      ? 'bg-primary-500 text-white border-primary-500'
-                      : 'border-gray-200 text-gray-600 hover:border-primary-300'
-                  )}
-                >
-                  {r}km
-                </button>
-              ))}
-            </div>
+          <InputField label="수령 장소" hint="음식을 어디서 받을지 정확히 적어주세요">
+            <input
+              type="text"
+              value={form.pickupLocation}
+              onChange={(e) => update('pickupLocation', e.target.value)}
+              placeholder="예: 기숙사 1동 로비, 인문대 정문"
+              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
           </InputField>
 
           <InputField label="마감 시간">

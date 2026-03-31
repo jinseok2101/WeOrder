@@ -65,6 +65,7 @@ export interface Room {
   deliveryFee: number;
   minimumOrder: number;
   radiusKm: number;
+  pickupLocation?: string;
   latitude: number;
   longitude: number;
   deadline: string;

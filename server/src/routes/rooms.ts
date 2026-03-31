@@ -49,10 +49,6 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
     });
 
     const result = rooms
-      .filter((room) => {
-        if (!lat || !lng || isNaN(lat) || isNaN(lng)) return true;
-        return haversineDistance(lat, lng, room.latitude, room.longitude) <= radius;
-      })
       .map((room) => {
         const distance =
           lat && lng && !isNaN(lat) && !isNaN(lng)
@@ -68,7 +64,7 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
           host: room.host,
           hostId: room.hostId,
           maxMembers: room.maxMembers,
-          radiusKm: room.radiusKm,
+          pickupLocation: room.pickupLocation,
           latitude: room.latitude,
           longitude: room.longitude,
           deadline: room.deadline,
@@ -115,13 +111,13 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
       maxMembers,
       deliveryFee,
       minimumOrder,
-      radiusKm,
+      pickupLocation,
       latitude,
       longitude,
       deadline,
     } = req.body;
 
-    if (!title || !restaurantName || !deliveryFee || !minimumOrder || !latitude || !longitude || !deadline) {
+    if (!title || !restaurantName || !deliveryFee || !minimumOrder || !pickupLocation || !latitude || !longitude || !deadline) {
       return res.status(400).json({ message: '필수 항목을 모두 입력해주세요.' });
     }
 
@@ -133,7 +129,7 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
         maxMembers: maxMembers || 4,
         deliveryFee: Number(deliveryFee),
         minimumOrder: Number(minimumOrder),
-        radiusKm: radiusKm || 1.0,
+        pickupLocation: typeof pickupLocation === 'string' ? pickupLocation : '지정되지 않음',
         latitude: Number(latitude),
         longitude: Number(longitude),
         deadline: new Date(deadline),
@@ -166,7 +162,7 @@ router.patch('/:id', authenticate, async (req: AuthRequest, res) => {
       maxMembers,
       deliveryFee,
       minimumOrder,
-      radiusKm,
+      pickupLocation,
       deadline,
     } = req.body;
 
@@ -183,7 +179,7 @@ router.patch('/:id', authenticate, async (req: AuthRequest, res) => {
         maxMembers: maxMembers ? Number(maxMembers) : undefined,
         deliveryFee: deliveryFee ? Number(deliveryFee) : undefined,
         minimumOrder: minimumOrder ? Number(minimumOrder) : undefined,
-        radiusKm: radiusKm ? Number(radiusKm) : undefined,
+        pickupLocation: pickupLocation ? String(pickupLocation) : undefined,
         deadline: deadline ? new Date(deadline) : undefined,
       },
       include: roomDetailInclude(),

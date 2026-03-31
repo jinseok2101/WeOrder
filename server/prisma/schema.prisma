@@ -36,6 +36,7 @@ model Room {
   deliveryFee    Int
   minimumOrder   Int
   radiusKm       Float      @default(1.0)
+  pickupLocation String?
   latitude       Float
   longitude      Float
   deadline       DateTime

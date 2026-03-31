@@ -14,7 +14,8 @@ export interface CreateRoomPayload {
   maxMembers: number;
   deliveryFee: number;
   minimumOrder: number;
-  radiusKm: number;
+  radiusKm?: number;
+  pickupLocation: string;
   latitude: number;
   longitude: number;
   deadline: string;

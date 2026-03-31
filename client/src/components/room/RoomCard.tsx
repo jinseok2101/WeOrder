@@ -23,13 +23,16 @@ export default function RoomCard({ room }: Props) {
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <RoomStatusBadge status={room.status} deadline={room.deadline} />
             {room.distance !== null && room.distance !== undefined && (
-              <span className="inline-flex items-center gap-0.5 text-xs text-gray-400">
-                <MapPin size={11} />
+              <span className="inline-flex items-center gap-0.5 text-xs text-gray-400 mr-1">
                 {room.distance < 1
                   ? `${Math.round(room.distance * 1000)}m`
                   : `${room.distance.toFixed(1)}km`}
               </span>
             )}
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-gray-100 rounded text-xs text-gray-600 truncate max-w-[140px]">
+              <MapPin size={10} className="flex-shrink-0" />
+              <span className="truncate">{room.pickupLocation || '장소 미지정'}</span>
+            </span>
           </div>
           <h3 className="font-bold text-gray-900 text-base truncate">{room.restaurantName}</h3>
           <p className="text-sm text-gray-500 truncate mt-0.5">{room.title}</p>

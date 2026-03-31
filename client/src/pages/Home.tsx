@@ -10,13 +10,12 @@ import BottomNav from '../components/layout/BottomNav';
 import RoomCard from '../components/room/RoomCard';
 import { cn } from '../lib/utils';
 
-const RADIUS_OPTIONS = [0.5, 1, 2, 3, 5];
+// 반경 필터 기능 제거
 
 export default function Home() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const { latitude, longitude, error: geoError, setLocation } = useGeolocation();
-  const [radius, setRadius] = useState(2);
   const [search, setSearch] = useState('');
   const [roadAddress, setRoadAddress] = useState('');
   const [jibunAddress, setJibunAddress] = useState('');
@@ -193,12 +192,11 @@ export default function Home() {
   }, [latitude, longitude, setLocation]);
 
   const { data: rooms = [], isLoading, refetch } = useQuery({
-    queryKey: ['rooms', latitude, longitude, radius],
+    queryKey: ['rooms', latitude, longitude],
     queryFn: () =>
       roomsApi.list({
         lat: latitude ?? undefined,
         lng: longitude ?? undefined,
-        radius,
       }),
     enabled: true,
     refetchInterval: 10_000,
@@ -207,7 +205,8 @@ export default function Home() {
   const filtered = rooms.filter(
     (r) =>
       r.restaurantName.toLowerCase().includes(search.toLowerCase()) ||
-      r.title.toLowerCase().includes(search.toLowerCase())
+      r.title.toLowerCase().includes(search.toLowerCase()) ||
+      (r.pickupLocation && r.pickupLocation.toLowerCase().includes(search.toLowerCase()))
   );
 
   return (
@@ -255,24 +254,7 @@ export default function Home() {
             </div>
 
             <div className="flex items-center justify-between mb-2 mt-2">
-               <span className="text-xs text-gray-500 font-medium">배달방 탐색 반경</span>
-               <span className="text-xs font-bold text-primary-600">{radius}km</span>
-            </div>
-            <div className="flex gap-1.5 mb-5">
-              {RADIUS_OPTIONS.map((r) => (
-                <button
-                  key={r}
-                  onClick={() => { setRadius(r); refetch(); }}
-                  className={cn(
-                    'flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors',
-                    radius === r
-                      ? 'bg-primary-500 text-white'
-                      : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                  )}
-                >
-                  {r}km
-                </button>
-              ))}
+               <span className="text-xs text-gray-500 font-medium">모든 배달방 표시 중</span>
             </div>
 
             <button 
@@ -346,7 +328,7 @@ export default function Home() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="식당 이름으로 검색"
+            placeholder="식당 이름, 방 제목, 수령 장소로 검색"
             className="w-full bg-white border border-gray-200 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
         </div>
