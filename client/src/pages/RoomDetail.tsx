@@ -175,7 +175,7 @@ export default function RoomDetail() {
             >
               나가기
             </button>
-          ) : isHost ? (
+          ) : isHost && !['ORDERED', 'SETTLED', 'CANCELLED'].includes(room.status) ? (
             <button
               onClick={() => navigate(`/rooms/${id}/edit`)}
               className="p-2 text-gray-400 hover:text-primary-500 transition-colors"
