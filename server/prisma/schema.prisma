@@ -22,6 +22,20 @@ model User {
   orderItems       OrderItem[]
   settlementShares SettlementShare[]
   chatMessages     ChatMessage[]
+  addresses        UserAddress[]
+}
+
+model UserAddress {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label        String
+  roadAddress  String
+  jibunAddress String?
+  latitude     Float
+  longitude    Float
+  isActive     Boolean  @default(false)
+  createdAt    DateTime @default(now())
 }
 
 model Room {

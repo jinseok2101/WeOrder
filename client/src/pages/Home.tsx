@@ -9,6 +9,7 @@ import Header from '../components/layout/Header';
 import BottomNav from '../components/layout/BottomNav';
 import RoomCard from '../components/room/RoomCard';
 import { cn } from '../lib/utils';
+import { addressesApi, UserAddress } from '../api/addresses';
 
 // 반경 필터 기능 제거
 
@@ -19,46 +20,56 @@ export default function Home() {
   const [search, setSearch] = useState('');
   const [roadAddress, setRoadAddress] = useState('');
   const [jibunAddress, setJibunAddress] = useState('');
-  const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
+  const [savedAddresses, setSavedAddresses] = useState<UserAddress[]>([]);
   const [activeAddressId, setActiveAddressId] = useState<string | null>(null);
 
   const mapRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
   const infoWindowRef = useRef<any>(null);
 
-  useEffect(() => {
-    const data = localStorage.getItem('weorder_addresses');
-    if (data) {
-      const parsed = JSON.parse(data);
-      setSavedAddresses(parsed);
-      const active = parsed.find((a: any) => a.isActive);
-      if (active) setActiveAddressId(active.id);
+  // 주소 목록 불러오기
+  const refreshAddresses = async () => {
+    try {
+      const list = await addressesApi.list();
+      setSavedAddresses(list);
+      const active = list.find((a) => a.isActive);
+      if (active) {
+        setActiveAddressId(active.id);
+        setLocation(active.latitude, active.longitude);
+      }
+    } catch (error) {
+      console.error('주소 목록 로드 실패:', error);
     }
-  }, []);
-
-  const saveToStorage = (list: any[]) => {
-    localStorage.setItem('weorder_addresses', JSON.stringify(list));
-    setSavedAddresses(list);
   };
 
-  const handleSaveAddress = () => {
+  useEffect(() => {
+    if (user) {
+      refreshAddresses();
+    }
+  }, [user]);
+
+  const handleSaveAddress = async () => {
     const label = prompt('주소 별칭을 입력해주세요 (예: 우리집, 회사)', RoadName(roadAddress) || '내 동네');
     if (label === null) return;
 
-    const newAddr = {
-      id: Math.random().toString(36).substr(2, 9),
-      label: label || '내 동네',
-      roadAddress,
-      jibunAddress,
-      lat: latitude,
-      lng: longitude,
-      isActive: true,
-    };
+    if (latitude === null || longitude === null) {
+      alert('위치 정보를 가져오는 중입니다. 잠시 후 다시 시도해주세요.');
+      return;
+    }
 
-    const newList = savedAddresses.map(a => ({ ...a, isActive: false })).concat(newAddr);
-    saveToStorage(newList);
-    setActiveAddressId(newAddr.id);
-    alert('새 주소가 저장되었습니다!');
+    try {
+      await addressesApi.add({
+        label: label || '내 동네',
+        roadAddress,
+        jibunAddress: jibunAddress || undefined,
+        latitude,
+        longitude,
+      });
+      alert('새 주소가 저장되었습니다!');
+      refreshAddresses();
+    } catch (error) {
+      alert('주소 저장에 실패했습니다.');
+    }
   };
 
   const RoadName = (addr: string) => {
@@ -67,30 +78,33 @@ export default function Home() {
     return parts[parts.length - 1]; // 대략적인 도로명/동네명 추출
   };
 
-  const selectAddress = (addr: any) => {
-    const newList = savedAddresses.map(a => ({
-      ...a,
-      isActive: a.id === addr.id
-    }));
-    saveToStorage(newList);
-    setActiveAddressId(addr.id);
-    setLocation(addr.lat, addr.lng);
-    
-    if (mapRef.current) {
-        const naver = (window as any).naver;
-        const center = new naver.maps.LatLng(addr.lat, addr.lng);
-        mapRef.current.panTo(center);
-        markerRef.current.setPosition(center);
+  const selectAddress = async (addr: UserAddress) => {
+    try {
+      await addressesApi.activate(addr.id);
+      setActiveAddressId(addr.id);
+      setLocation(addr.latitude, addr.longitude);
+      
+      if (mapRef.current) {
+          const naver = (window as any).naver;
+          const center = new naver.maps.LatLng(addr.latitude, addr.longitude);
+          mapRef.current.panTo(center);
+          markerRef.current.setPosition(center);
+      }
+      fetchAddress(addr.latitude, addr.longitude);
+    } catch (error) {
+      alert('주소 선택에 실패했습니다.');
     }
-    fetchAddress(addr.lat, addr.lng);
   };
 
-  const deleteAddress = (id: string, e: any) => {
+  const deleteAddress = async (id: string, e: any) => {
     e.stopPropagation();
     if (!confirm('이 주소를 삭제할까요?')) return;
-    const newList = savedAddresses.filter(a => a.id !== id);
-    saveToStorage(newList);
-    if (activeAddressId === id) setActiveAddressId(newList[0]?.id || null);
+    try {
+      await addressesApi.delete(id);
+      refreshAddresses();
+    } catch (error) {
+      alert('주소 삭제에 실패했습니다.');
+    }
   };
 
   const fetchAddress = (lat: number, lng: number) => {
