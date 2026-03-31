@@ -54,15 +54,24 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
       orderBy: { createdAt: 'desc' },
     });
 
-    const SEARCH_RADIUS_KM = 1.0;
+    const FALLBACK_RADIUS_KM = 5.0; // 동 이름 없는 방의 보조 거리 필터
 
     const result = rooms
       .filter((room) => {
         if (!hasCoords) return true;
-        // 동 이름이 둘 다 있고 다르면 제외
-        if (dongName && room.dongName && room.dongName !== dongName) return false;
-        // 좌표가 있으면 1km 이내인지 확인
-        return haversineDistance(lat, lng, room.latitude, room.longitude) <= SEARCH_RADIUS_KM;
+
+        const sameDong = dongName && room.dongName && room.dongName === dongName;
+
+        // 동 이름이 일치하면 거리 무관하게 표시 (같은 동네면 무조건 노출)
+        if (sameDong) return true;
+
+        // 동 이름 정보가 없는 방은 보조 반경(5km) 이내이면 표시
+        if (!room.dongName) {
+          return haversineDistance(lat, lng, room.latitude, room.longitude) <= FALLBACK_RADIUS_KM;
+        }
+
+        // 동 이름이 다른 방은 제외
+        return false;
       })
       .map((room) => {
         const distance = hasCoords
