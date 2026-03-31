@@ -5,6 +5,7 @@ export interface RoomsQuery {
   lat?: number;
   lng?: number;
   radius?: number;
+  dongName?: string;
 }
 
 export interface CreateRoomPayload {
@@ -16,6 +17,7 @@ export interface CreateRoomPayload {
   minimumOrder: number;
   radiusKm?: number;
   pickupLocation: string;
+  dongName?: string;
   latitude: number;
   longitude: number;
   deadline: string;

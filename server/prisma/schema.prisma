@@ -51,6 +51,7 @@ model Room {
   minimumOrder   Int
   radiusKm       Float      @default(1.0)
   pickupLocation String?
+  dongName       String?
   latitude       Float
   longitude      Float
   deadline       DateTime

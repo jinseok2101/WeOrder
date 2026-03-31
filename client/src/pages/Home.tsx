@@ -20,6 +20,7 @@ export default function Home() {
   const [search, setSearch] = useState('');
   const [roadAddress, setRoadAddress] = useState('');
   const [jibunAddress, setJibunAddress] = useState('');
+  const [dongName, setDongName] = useState('');
   const [savedAddresses, setSavedAddresses] = useState<UserAddress[]>([]);
   const [activeAddressId, setActiveAddressId] = useState<string | null>(null);
 
@@ -126,6 +127,9 @@ export default function Home() {
       const address = response.v2.address;
       setRoadAddress(address.roadAddress || address.jibunAddress || '상세 주소를 알 수 없어요');
       setJibunAddress(address.roadAddress ? address.jibunAddress : '');
+      // 역지오코딩 결과에서 '동' 이름 추출 (area3 = 읍/면/동 수준)
+      const area3 = response.v2?.results?.[0]?.region?.area3?.name;
+      if (area3) setDongName(area3);
     });
   };
 
@@ -213,11 +217,12 @@ export default function Home() {
   }, [latitude, longitude, setLocation]);
 
   const { data: rooms = [], isLoading, refetch } = useQuery({
-    queryKey: ['rooms', latitude, longitude],
+    queryKey: ['rooms', latitude, longitude, dongName],
     queryFn: () =>
       roomsApi.list({
         lat: latitude ?? undefined,
         lng: longitude ?? undefined,
+        dongName: dongName || undefined,
       }),
     enabled: true,
     refetchInterval: 10_000,

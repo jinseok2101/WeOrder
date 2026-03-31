@@ -33,12 +33,18 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
   try {
     const lat = parseFloat(req.query.lat as string);
     const lng = parseFloat(req.query.lng as string);
-    const radius = parseFloat(req.query.radius as string) || 2.0;
+    const dongName = req.query.dongName as string | undefined;
+    const hasCoords = lat && lng && !isNaN(lat) && !isNaN(lng);
+    // 동 이름 필터 조건 구성 (동 이름이 있으면 일치하거나 dungName이 없는 방)
+    const dongFilter = dongName
+      ? { OR: [{ dongName }, { dongName: null }] }
+      : {};
 
     const rooms = await prisma.room.findMany({
       where: {
         status: { in: ['OPEN', 'ORDERING'] },
         deadline: { gt: new Date() },
+        ...dongFilter,
       },
       include: {
         host: { select: { id: true, nickname: true } },
@@ -48,12 +54,20 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
       orderBy: { createdAt: 'desc' },
     });
 
+    const SEARCH_RADIUS_KM = 1.0;
+
     const result = rooms
+      .filter((room) => {
+        if (!hasCoords) return true;
+        // 동 이름이 둘 다 있고 다르면 제외
+        if (dongName && room.dongName && room.dongName !== dongName) return false;
+        // 좌표가 있으면 1km 이내인지 확인
+        return haversineDistance(lat, lng, room.latitude, room.longitude) <= SEARCH_RADIUS_KM;
+      })
       .map((room) => {
-        const distance =
-          lat && lng && !isNaN(lat) && !isNaN(lng)
-            ? Math.round(haversineDistance(lat, lng, room.latitude, room.longitude) * 100) / 100
-            : null;
+        const distance = hasCoords
+          ? Math.round(haversineDistance(lat, lng, room.latitude, room.longitude) * 100) / 100
+          : null;
         const totals = calcOrderTotals(room.orderItems, room.minimumOrder, room.deliveryFee);
         return {
           id: room.id,
@@ -65,6 +79,7 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
           hostId: room.hostId,
           maxMembers: room.maxMembers,
           pickupLocation: room.pickupLocation,
+          dongName: room.dongName,
           latitude: room.latitude,
           longitude: room.longitude,
           deadline: room.deadline,
@@ -112,6 +127,7 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
       deliveryFee,
       minimumOrder,
       pickupLocation,
+      dongName,
       latitude,
       longitude,
       deadline,
@@ -130,6 +146,7 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
         deliveryFee: Number(deliveryFee),
         minimumOrder: Number(minimumOrder),
         pickupLocation: typeof pickupLocation === 'string' ? pickupLocation : '지정되지 않음',
+        dongName: typeof dongName === 'string' ? dongName : null,
         latitude: Number(latitude),
         longitude: Number(longitude),
         deadline: new Date(deadline),
@@ -163,6 +180,7 @@ router.patch('/:id', authenticate, async (req: AuthRequest, res) => {
       deliveryFee,
       minimumOrder,
       pickupLocation,
+      dongName,
       deadline,
     } = req.body;
 
@@ -183,6 +201,7 @@ router.patch('/:id', authenticate, async (req: AuthRequest, res) => {
         deliveryFee: deliveryFee ? Number(deliveryFee) : undefined,
         minimumOrder: minimumOrder ? Number(minimumOrder) : undefined,
         pickupLocation: pickupLocation ? String(pickupLocation) : undefined,
+        dongName: dongName !== undefined ? (dongName ? String(dongName) : null) : undefined,
         deadline: deadline ? new Date(deadline) : undefined,
       },
       include: roomDetailInclude(),

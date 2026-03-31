@@ -42,6 +42,22 @@ export default function CreateRoom() {
     deadline: '',
   });
   const [error, setError] = useState('');
+  const [dongName, setDongName] = useState('');
+
+  // 위치가 확정되면 역지오코딩으로 동 이름 추출
+  useEffect(() => {
+    if (!latitude || !longitude || isEdit) return;
+    const naver = (window as any).naver;
+    if (!naver?.maps?.Service) return;
+    naver.maps.Service.reverseGeocode(
+      { coords: new naver.maps.LatLng(latitude, longitude) },
+      (status: any, response: any) => {
+        if (status !== naver.maps.Service.Status.OK) return;
+        const area3 = response.v2?.results?.[0]?.region?.area3?.name;
+        if (area3) setDongName(area3);
+      }
+    );
+  }, [latitude, longitude, isEdit]);
 
   const { data: roomData, isLoading: isFetching } = useQuery({
     queryKey: ['room', id],
@@ -114,6 +130,7 @@ export default function CreateRoom() {
       deliveryFee: parseInt(form.deliveryFee),
       minimumOrder: parseInt(form.minimumOrder),
       pickupLocation: form.pickupLocation.trim(),
+      dongName: dongName || undefined,
       latitude: latitude || (isEdit ? roomData?.latitude ?? 0 : 0),
       longitude: longitude || (isEdit ? roomData?.longitude ?? 0 : 0),
       deadline: new Date(form.deadline).toISOString(),

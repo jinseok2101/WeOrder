@@ -66,6 +66,7 @@ export interface Room {
   minimumOrder: number;
   radiusKm: number;
   pickupLocation?: string;
+  dongName?: string | null;
   latitude: number;
   longitude: number;
   deadline: string;
