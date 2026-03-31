@@ -1,51 +1,67 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect } from 'react';
+import { create } from 'zustand';
 
 interface GeolocationState {
   latitude: number | null;
   longitude: number | null;
   error: string | null;
   loading: boolean;
+  setLocation: (lat: number, lng: number) => void;
+  fetchIPLocation: () => Promise<void>;
 }
 
-export function useGeolocation() {
-  const [state, setState] = useState<GeolocationState>({
-    latitude: null,
-    longitude: null,
-    error: null,
-    loading: true,
-  });
+// Zustand를 사용하여 위치 정보를 전역 상태로 관리
+const useGeoStore = create<GeolocationState>((set, get) => ({
+  latitude: null,
+  longitude: null,
+  error: null,
+  loading: true,
+  setLocation: (lat: number, lng: number) => {
+    set({ latitude: lat, longitude: lng, error: null });
+  },
+  fetchIPLocation: async () => {
+    // 이미 지정된 위치(예: 사용자가 지도를 움직여 설정하거나 저장된 주소를 클릭한 경우)가 있다면 무시
+    if (get().latitude !== null) return;
+    
+    try {
+      const res = await fetch('https://get.geojs.io/v1/ip/geo.json');
+      if (!res.ok) throw new Error('Network error');
+      const data = await res.json();
+      
+      // 비동기 요청 도중에 다른 위치가 설정되었을 수 있으므로 한 번 더 검사
+      if (get().latitude !== null) return;
+      
+      set({
+        latitude: parseFloat(data.latitude),
+        longitude: parseFloat(data.longitude),
+        error: null,
+        loading: false,
+      });
+    } catch {
+      if (get().latitude !== null) return;
+      set({
+        latitude: 37.5665,
+        longitude: 126.978,
+        error: '네트워크 문제로 대략적 위치를 찾지 못했습니다. 서울 중심부로 설정됩니다.',
+        loading: false,
+      });
+    }
+  }
+}));
 
-  const setLocation = useCallback((lat: number, lng: number) => {
-    setState((prev) => ({
-      ...prev,
-      latitude: lat,
-      longitude: lng,
-      error: null,
-    }));
-  }, []);
+export function useGeolocation() {
+  const store = useGeoStore();
 
   useEffect(() => {
-    // 1. 귀찮은 권한 팝업 없이 IP 주소 기반으로 조용히 위치를 추적합니다.
-    fetch('https://get.geojs.io/v1/ip/geo.json')
-      .then((res) => res.json())
-      .then((data) => {
-        setState({
-          latitude: parseFloat(data.latitude),
-          longitude: parseFloat(data.longitude),
-          error: null,
-          loading: false,
-        });
-      })
-      .catch(() => {
-        // 2. 만약 IP 추적이 실패하더라도 앱이 멈추지 않고 서울을 가리키도록 방어합니다.
-        setState({
-          latitude: 37.5665,
-          longitude: 126.978,
-          error: '네트워크 문제로 대략적 위치를 찾지 못했습니다. 서울 중심부로 설정됩니다.',
-          loading: false,
-        });
-      });
+    // 컴포넌트 마운트 시 최초 1회만 IP 위치 조회 수동 시작 (이미 위치가 있다면 스토어 내부에서 무시됨)
+    store.fetchIPLocation();
   }, []);
 
-  return { ...state, setLocation };
+  return {
+    latitude: store.latitude,
+    longitude: store.longitude,
+    error: store.error,
+    loading: store.loading,
+    setLocation: store.setLocation,
+  };
 }
