@@ -127,7 +127,7 @@ export default function RoomDetail() {
   const isExpired = room.deadline ? new Date(room.deadline).getTime() < Date.now() : false;
   const isMember = (room.members || []).some((m) => m.userId === user?.id);
   const isHost = room.hostId === user?.id;
-  const canJoin = !isMember && room.status === 'OPEN' && (room.members?.length ?? 0) < room.maxMembers && !isExpired;
+  const canJoin = !isMember && room.status === 'OPEN' && !isExpired;
   const canOrder = isMember && (room.status === 'OPEN' || room.status === 'ORDERING') && !isExpired;
   const canEdit = isMember && (room.status === 'OPEN' || room.status === 'ORDERING') && !isExpired;
   const totals = orderTotals ?? {
@@ -194,7 +194,7 @@ export default function RoomDetail() {
                 <RoomStatusBadge status={room.status} deadline={room.deadline} />
                 <span className="text-xs text-gray-400 flex items-center gap-1">
                   <Users size={12} />
-                  {room.members?.length ?? 0}/{room.maxMembers}명
+                  {room.members?.length ?? 0}명
                 </span>
                 {room.pickupLocation && (
                   <span className="text-xs text-gray-500 bg-gray-100/80 rounded px-1.5 py-0.5 flex items-center gap-1 max-w-[150px] truncate">

@@ -61,7 +61,6 @@ export interface Room {
   status: RoomStatus;
   hostId: string;
   host: { id: string; nickname: string };
-  maxMembers: number;
   deliveryFee: number;
   minimumOrder: number;
   radiusKm: number;

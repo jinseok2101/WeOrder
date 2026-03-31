@@ -62,7 +62,7 @@ export default function RoomCard({ room }: Props) {
           <div className="flex items-center gap-3 text-xs text-gray-500">
             <span className="flex items-center gap-1">
               <Users size={13} />
-              {room.memberCount ?? 0}/{room.maxMembers}명
+              {room.memberCount ?? 0}명
             </span>
             <span>배달비 {formatCurrency(room.deliveryFee / (room.memberCount || 1))}씩</span>
           </div>

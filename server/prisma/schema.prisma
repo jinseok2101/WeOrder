@@ -46,7 +46,6 @@ model Room {
   status         RoomStatus @default(OPEN)
   hostId         String
   host           User       @relation("RoomHost", fields: [hostId], references: [id])
-  maxMembers     Int        @default(4)
   deliveryFee    Int
   minimumOrder   Int
   radiusKm       Float      @default(1.0)

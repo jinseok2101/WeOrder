@@ -12,7 +12,6 @@ export interface CreateRoomPayload {
   title: string;
   restaurantName: string;
   restaurantUrl?: string;
-  maxMembers: number;
   deliveryFee: number;
   minimumOrder: number;
   radiusKm?: number;

@@ -35,7 +35,6 @@ export default function CreateRoom() {
     title: '',
     restaurantName: '',
     restaurantUrl: '',
-    maxMembers: '4',
     deliveryFee: '',
     minimumOrder: '',
     pickupLocation: '',
@@ -74,7 +73,6 @@ export default function CreateRoom() {
         title: roomData.title,
         restaurantName: roomData.restaurantName,
         restaurantUrl: roomData.restaurantUrl || '',
-        maxMembers: String(roomData.maxMembers),
         deliveryFee: String(roomData.deliveryFee),
         minimumOrder: String(roomData.minimumOrder),
         pickupLocation: roomData.pickupLocation || '',
@@ -126,7 +124,6 @@ export default function CreateRoom() {
       title: form.title.trim(),
       restaurantName: form.restaurantName.trim(),
       restaurantUrl: form.restaurantUrl.trim() || undefined,
-      maxMembers: parseInt(form.maxMembers),
       deliveryFee: parseInt(form.deliveryFee),
       minimumOrder: parseInt(form.minimumOrder),
       pickupLocation: form.pickupLocation.trim(),
@@ -139,11 +136,6 @@ export default function CreateRoom() {
 
   const update = (k: keyof typeof form, v: string) =>
     setForm((f) => ({ ...f, [k]: v }));
-
-  const perPerson =
-    form.deliveryFee && form.maxMembers
-      ? Math.ceil(parseInt(form.deliveryFee) / parseInt(form.maxMembers))
-      : 0;
 
   if (isEdit && (isFetching || !roomData)) {
     return (
@@ -225,40 +217,10 @@ export default function CreateRoom() {
               </div>
             </InputField>
           </div>
-
-          {perPerson > 0 && (
-            <div className="flex items-start gap-2 bg-primary-50 rounded-xl px-3 py-2.5 text-sm">
-              <Info size={15} className="text-primary-500 mt-0.5 flex-shrink-0" />
-              <span className="text-primary-700">
-                최대 {form.maxMembers}명 기준 1인당 배달비 약{' '}
-                <strong>{formatCurrency(perPerson)}</strong>
-              </span>
-            </div>
-          )}
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-4">
           <h2 className="font-bold text-gray-700 text-xs uppercase tracking-wide">모집 설정</h2>
-
-          <InputField label="최대 인원">
-            <div className="flex gap-2">
-              {[2, 3, 4, 5, 6].map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  onClick={() => update('maxMembers', String(n))}
-                  className={cn(
-                    'flex-1 py-2.5 rounded-xl text-sm font-semibold border transition-colors',
-                    form.maxMembers === String(n)
-                      ? 'bg-primary-500 text-white border-primary-500'
-                      : 'border-gray-200 text-gray-600 hover:border-primary-300'
-                  )}
-                >
-                  {n}명
-                </button>
-              ))}
-            </div>
-          </InputField>
 
           <InputField label="수령 장소" hint="음식을 어디서 받을지 정확히 적어주세요">
             <input

@@ -86,7 +86,6 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
           status: room.status,
           host: room.host,
           hostId: room.hostId,
-          maxMembers: room.maxMembers,
           pickupLocation: room.pickupLocation,
           dongName: room.dongName,
           latitude: room.latitude,
@@ -132,7 +131,6 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
       title,
       restaurantName,
       restaurantUrl,
-      maxMembers,
       deliveryFee,
       minimumOrder,
       pickupLocation,
@@ -151,7 +149,6 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
         title,
         restaurantName,
         restaurantUrl,
-        maxMembers: maxMembers || 4,
         deliveryFee: Number(deliveryFee),
         minimumOrder: Number(minimumOrder),
         pickupLocation: typeof pickupLocation === 'string' ? pickupLocation : '지정되지 않음',
@@ -185,7 +182,6 @@ router.patch('/:id', authenticate, async (req: AuthRequest, res) => {
       title,
       restaurantName,
       restaurantUrl,
-      maxMembers,
       deliveryFee,
       minimumOrder,
       pickupLocation,
@@ -206,7 +202,6 @@ router.patch('/:id', authenticate, async (req: AuthRequest, res) => {
         title,
         restaurantName,
         restaurantUrl,
-        maxMembers: maxMembers ? Number(maxMembers) : undefined,
         deliveryFee: deliveryFee ? Number(deliveryFee) : undefined,
         minimumOrder: minimumOrder ? Number(minimumOrder) : undefined,
         pickupLocation: pickupLocation ? String(pickupLocation) : undefined,
@@ -248,7 +243,6 @@ router.post('/:id/join', authenticate, async (req: AuthRequest, res) => {
     if (!room) return res.status(404).json({ message: '방을 찾을 수 없습니다.' });
     if (new Date() > room.deadline) return res.status(400).json({ message: '이미 마감된 방입니다.' });
     if (room.status !== 'OPEN') return res.status(400).json({ message: '현재 참여할 수 없는 방입니다.' });
-    if (room.members.length >= room.maxMembers) return res.status(400).json({ message: '방이 가득 찼습니다.' });
 
     const existing = await prisma.roomMember.findUnique({
       where: { roomId_userId: { roomId: id, userId } },
