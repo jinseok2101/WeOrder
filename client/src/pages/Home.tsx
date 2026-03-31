@@ -28,6 +28,7 @@ export default function Home() {
   const markerRef = useRef<any>(null);
   const infoWindowRef = useRef<any>(null);
   const isDraggingRef = useRef(false);
+  const roomMarkersRef = useRef<any[]>([]);
 
   // 주소 목록 불러오기
   const refreshAddresses = async () => {
@@ -234,6 +235,50 @@ export default function Home() {
       r.title.toLowerCase().includes(search.toLowerCase()) ||
       (r.pickupLocation && r.pickupLocation.toLowerCase().includes(search.toLowerCase()))
   );
+
+  useEffect(() => {
+    if (!mapRef.current || typeof window === 'undefined') return;
+    const naver = (window as any).naver;
+    if (!naver || !naver.maps) return;
+
+    // 기존 마커들 삭제
+    roomMarkersRef.current.forEach((marker) => marker.setMap(null));
+    roomMarkersRef.current = [];
+
+    // 새로운 방 마커들 추가
+    filtered.forEach((room) => {
+      const position = new naver.maps.LatLng(room.latitude, room.longitude);
+      const marker = new naver.maps.Marker({
+        position,
+        map: mapRef.current,
+        icon: {
+          content: `
+            <div style="
+              background-color: #FF5A5F; 
+              color: white; 
+              padding: 4px 8px; 
+              border-radius: 12px; 
+              font-size: 12px; 
+              font-weight: bold; 
+              box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+              white-space: nowrap;
+              border: 2px solid white;
+            ">
+              🍔 ${room.restaurantName}
+            </div>
+          `,
+          anchor: new naver.maps.Point(20, 30),
+        },
+      });
+
+      // 마커 클릭 시 방으로 이동
+      naver.maps.Event.addListener(marker, 'click', () => {
+        navigate(`/rooms/${room.id}`);
+      });
+
+      roomMarkersRef.current.push(marker);
+    });
+  }, [filtered, navigate]);
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
