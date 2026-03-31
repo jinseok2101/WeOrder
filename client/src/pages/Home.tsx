@@ -26,6 +26,7 @@ export default function Home() {
   const mapRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
   const infoWindowRef = useRef<any>(null);
+  const isDraggingRef = useRef(false);
 
   // 주소 목록 불러오기
   const refreshAddresses = async () => {
@@ -185,15 +186,21 @@ export default function Home() {
       infoWindowRef.current.open(mapRef.current, markerRef.current);
 
       naver.maps.Event.addListener(mapRef.current, 'dragstart', () => {
+        isDraggingRef.current = true;
         infoWindowRef.current.close();
       });
 
-      // 지도를 움직이는 동안 마커도 중앙에 꽂힌 채로 따라가게 효과
+      // 드래그 중일 때만 마커가 지도 중앙을 따라가게
       naver.maps.Event.addListener(mapRef.current, 'drag', () => {
-        markerRef.current.setPosition(mapRef.current.getCenter());
+        if (isDraggingRef.current) {
+          markerRef.current.setPosition(mapRef.current.getCenter());
+        }
       });
 
+      // idle은 드래그가 끝났을 때만 위치 확정 (줌 시에는 무시)
       naver.maps.Event.addListener(mapRef.current, 'idle', () => {
+        if (!isDraggingRef.current) return;
+        isDraggingRef.current = false;
         const newCenter = mapRef.current.getCenter();
         markerRef.current.setPosition(newCenter);
         setLocation(newCenter.lat(), newCenter.lng());
