@@ -12,9 +12,15 @@ router.put('/:id', authenticate, async (req: AuthRequest, res) => {
     const { name, price, quantity, options } = req.body;
     const userId = req.userId!;
 
-    const existing = await prisma.orderItem.findUnique({ where: { id } });
+    const existing = await prisma.orderItem.findUnique({
+      where: { id },
+      include: { room: { select: { status: true } } },
+    });
     if (!existing) return res.status(404).json({ message: '주문 항목을 찾을 수 없습니다.' });
     if (existing.userId !== userId) return res.status(403).json({ message: '본인 주문만 수정할 수 있습니다.' });
+    if (['ORDERED', 'SETTLED', 'CANCELLED'].includes(existing.room.status)) {
+      return res.status(400).json({ message: '주문이 완료되어 수정할 수 없습니다.' });
+    }
 
     const item = await prisma.orderItem.update({
       where: { id },
@@ -48,9 +54,15 @@ router.delete('/:id', authenticate, async (req: AuthRequest, res) => {
     const { id } = req.params;
     const userId = req.userId!;
 
-    const existing = await prisma.orderItem.findUnique({ where: { id } });
+    const existing = await prisma.orderItem.findUnique({
+      where: { id },
+      include: { room: { select: { status: true } } },
+    });
     if (!existing) return res.status(404).json({ message: '주문 항목을 찾을 수 없습니다.' });
     if (existing.userId !== userId) return res.status(403).json({ message: '본인 주문만 삭제할 수 있습니다.' });
+    if (['ORDERED', 'SETTLED', 'CANCELLED'].includes(existing.room.status)) {
+      return res.status(400).json({ message: '주문이 완료되어 삭제할 수 없습니다.' });
+    }
 
     await prisma.orderItem.delete({ where: { id } });
 

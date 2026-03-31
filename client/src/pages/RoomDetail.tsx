@@ -129,6 +129,7 @@ export default function RoomDetail() {
   const isHost = room.hostId === user?.id;
   const canJoin = !isMember && room.status === 'OPEN' && (room.members?.length ?? 0) < room.maxMembers && !isExpired;
   const canOrder = isMember && (room.status === 'OPEN' || room.status === 'ORDERING') && !isExpired;
+  const canEdit = isMember && (room.status === 'OPEN' || room.status === 'ORDERING') && !isExpired;
   const totals = orderTotals ?? {
     totalMenuAmount: 0,
     minimumOrder: room.minimumOrder,
@@ -291,6 +292,7 @@ export default function RoomDetail() {
             currentUserId={user!.id}
             roomId={id!}
             canAdd={canOrder}
+            canEdit={canEdit}
             onAdd={(data) => addOrderMutation.mutateAsync(data)}
             onEdit={(itemId, data) => editOrderMutation.mutateAsync({ itemId, data })}
             onDelete={(itemId) => deleteOrderMutation.mutateAsync(itemId)}

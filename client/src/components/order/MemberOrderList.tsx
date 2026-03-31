@@ -10,6 +10,7 @@ interface Props {
   currentUserId: string;
   roomId: string;
   canAdd: boolean;
+  canEdit: boolean;
   onAdd: (data: { name: string; price: number; quantity: number; options?: string }) => Promise<void>;
   onEdit: (id: string, data: { name: string; price: number; quantity: number; options?: string }) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
@@ -27,6 +28,7 @@ export default function MemberOrderList({
   currentUserId,
   roomId: _roomId,
   canAdd,
+  canEdit,
   onAdd,
   onEdit,
   onDelete,
@@ -93,7 +95,7 @@ export default function MemberOrderList({
               <OrderItemCard
                 key={item.id}
                 item={item}
-                isOwner={item.userId === currentUserId}
+                isOwner={item.userId === currentUserId && canEdit}
                 onEdit={handleEdit}
                 onDelete={onDelete}
               />
