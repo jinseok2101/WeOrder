@@ -233,11 +233,25 @@ export default function RoomDetail() {
         </div>
 
         {isHost && room.status === 'OPEN' && (
-          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 flex items-center justify-between">
-            <span className="text-sm text-amber-800 font-medium">주문을 시작할 준비가 됐나요?</span>
+          <div className={cn(
+            "rounded-2xl p-3 flex items-center justify-between",
+            totals.isMinimumMet ? "bg-amber-50 border border-amber-200" : "bg-gray-50 border border-gray-200"
+          )}>
+            <span className={cn(
+              "text-sm font-medium",
+              totals.isMinimumMet ? "text-amber-800" : "text-gray-500"
+            )}>
+              {totals.isMinimumMet ? "주문을 시작할 준비가 됐나요?" : "최소주문금액을 채워야 주문이 가능해요"}
+            </span>
             <button
               onClick={() => statusMutation.mutate('ORDERING')}
-              className="text-xs bg-amber-500 text-white px-3 py-1.5 rounded-full font-bold hover:bg-amber-600 transition-colors"
+              disabled={!totals.isMinimumMet}
+              className={cn(
+                "text-xs text-white px-3 py-1.5 rounded-full font-bold transition-colors",
+                totals.isMinimumMet 
+                  ? "bg-amber-500 hover:bg-amber-600" 
+                  : "bg-gray-300 cursor-not-allowed opacity-70"
+              )}
             >
               주문 시작
             </button>

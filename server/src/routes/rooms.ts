@@ -319,9 +319,19 @@ router.patch('/:id/status', authenticate, async (req: AuthRequest, res) => {
     const { id } = req.params;
     const { status } = req.body;
 
-    const room = await prisma.room.findUnique({ where: { id } });
+    const room = await prisma.room.findUnique({ 
+      where: { id },
+      include: { orderItems: true }
+    });
     if (!room) return res.status(404).json({ message: '방을 찾을 수 없습니다.' });
     if (room.hostId !== req.userId) return res.status(403).json({ message: '방장만 상태를 변경할 수 있습니다.' });
+
+    if (status === 'ORDERING') {
+      const totalMenuAmount = room.orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      if (totalMenuAmount < room.minimumOrder) {
+        return res.status(400).json({ message: '최소 주문 금액을 채워야 주문을 시작할 수 있습니다.' });
+      }
+    }
 
     const updated = await prisma.room.update({
       where: { id },
