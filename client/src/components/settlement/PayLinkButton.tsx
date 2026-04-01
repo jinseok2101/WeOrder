@@ -15,7 +15,6 @@ interface Props {
 
 export default function PayLinkButton({ host, amount, className }: Props) {
   const [copied, setCopied] = useState(false);
-  const tossUrl = host.tossId ? `https://toss.me/${encodeURIComponent(host.tossId)}/${amount}` : '';
   const kakaoUrl = host.kakaoPayLink || '';
 
   const handleCopyAccount = () => {
@@ -23,6 +22,18 @@ export default function PayLinkButton({ host, amount, className }: Props) {
       navigator.clipboard.writeText(host.bankAccount);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleTossOpen = () => {
+    if (host.bankAccount) {
+      navigator.clipboard.writeText(host.bankAccount).then(() => {
+        window.location.href = 'supertoss://send';
+      }).catch(() => {
+        window.location.href = 'supertoss://send';
+      });
+    } else {
+      window.location.href = 'supertoss://send';
     }
   };
 
@@ -37,7 +48,7 @@ export default function PayLinkButton({ host, amount, className }: Props) {
           <span className="text-sm font-medium text-gray-700">{host.bankAccount}</span>
           <button 
             onClick={handleCopyAccount}
-            className="text-xs flex items-center gap-1 text-primary-600 bg-primary-50 px-2 flex-shrink-0 py-1.5 rounded-lg hover:bg-primary-100 transition-colors"
+            className="text-xs flex items-center gap-1 text-primary-600 bg-primary-50 px-2 py-1.5 rounded-lg hover:bg-primary-100 transition-colors flex-shrink-0"
           >
             <Copy size={12} />
             {copied ? '복사됨' : '계좌복사'}
@@ -45,18 +56,16 @@ export default function PayLinkButton({ host, amount, className }: Props) {
         </div>
       )}
 
-      {(host.tossId || host.kakaoPayLink) && (
-        <div className={cn('grid gap-2', (host.tossId && host.kakaoPayLink) ? 'grid-cols-2' : 'grid-cols-1')}>
-          {host.tossId && (
-            <a
-              href={tossUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+      {(host.bankAccount || host.kakaoPayLink) && (
+        <div className={cn('grid gap-2', (host.bankAccount && host.kakaoPayLink) ? 'grid-cols-2' : 'grid-cols-1')}>
+          {host.bankAccount && (
+            <button
+              onClick={handleTossOpen}
               className="flex items-center justify-center gap-1.5 bg-[#0064FF] text-white rounded-xl py-2.5 text-sm font-bold cursor-pointer hover:opacity-90 transition-opacity"
             >
               <ExternalLink size={14} />
-              토스로 보내기
-            </a>
+              토스 열기
+            </button>
           )}
           {host.kakaoPayLink && (
             <a
@@ -72,8 +81,8 @@ export default function PayLinkButton({ host, amount, className }: Props) {
         </div>
       )}
 
-      {!host.tossId && !host.kakaoPayLink && !host.bankAccount && (
-        <p className="text-xs text-red-500 text-center bg-red-50 py-2 rounded-xl mt-1">
+      {!host.kakaoPayLink && !host.bankAccount && (
+        <p className="text-xs text-red-500 text-center bg-red-50 py-2 rounded-xl mt-1 border border-red-100">
           방장이 아직 송금 정보를 등록하지 않았습니다. 채팅으로 문의해주세요!
         </p>
       )}

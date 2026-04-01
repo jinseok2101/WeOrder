@@ -45,18 +45,6 @@ export default function PaymentSettings() {
       {isOpen && (
         <form onSubmit={handleSubmit} className="p-4 border-t border-gray-100 space-y-4">
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-gray-600 block">토스 아이디 (tossId)</label>
-            <input
-              type="text"
-              value={form.tossId}
-              onChange={(e) => setForm({ ...form, tossId: e.target.value })}
-              placeholder="예: gildong"
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
-            <p className="text-[10px] text-gray-400">toss.me/ 뒤에 붙는 아이디만 입력하세요.</p>
-          </div>
-
-          <div className="space-y-1.5">
             <label className="text-xs font-bold text-gray-600 block">카카오페이 송금 링크</label>
             <input
               type="text"
