@@ -21,4 +21,6 @@ export const authApi = {
   login: (data: LoginPayload) =>
     api.post<AuthResponse>('/auth/login', data).then((r) => r.data),
   me: () => api.get<User>('/auth/me').then((r) => r.data),
+  updatePayment: (data: { tossId?: string | null; kakaoPayLink?: string | null; bankAccount?: string | null }) =>
+    api.patch<User>('/auth/me/payment', data).then((r) => r.data),
 };

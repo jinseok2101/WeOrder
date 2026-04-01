@@ -9,7 +9,7 @@ const router = Router();
 
 function roomDetailInclude() {
   return {
-    host: { select: { id: true, nickname: true } },
+    host: { select: { id: true, nickname: true, tossId: true, kakaoPayLink: true, bankAccount: true } },
     members: {
       include: { user: { select: { id: true, nickname: true } } },
       orderBy: { joinedAt: 'asc' as const },
@@ -47,7 +47,7 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
         ...dongFilter,
       },
       include: {
-        host: { select: { id: true, nickname: true } },
+        host: { select: { id: true, nickname: true, tossId: true, kakaoPayLink: true, bankAccount: true } },
         members: true,
         orderItems: true,
       },

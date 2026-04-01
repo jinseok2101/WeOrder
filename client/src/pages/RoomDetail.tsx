@@ -373,8 +373,7 @@ export default function RoomDetail() {
               <SettlementSummary
                 settlement={settlement || room.settlement!}
                 currentUserId={user!.id}
-                hostId={room.hostId}
-                hostNickname={room.host.nickname}
+                host={room.host}
                 roomId={id!}
               />
             ) : (

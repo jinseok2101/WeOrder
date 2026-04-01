@@ -7,6 +7,7 @@ import { useAuthStore } from '../store/authStore';
 import Header from '../components/layout/Header';
 import BottomNav from '../components/layout/BottomNav';
 import RoomStatusBadge from '../components/room/RoomStatusBadge';
+import PaymentSettings from '../components/settlement/PaymentSettings';
 import { cn, formatCurrency, formatDate } from '../lib/utils';
 
 function SettlementIndicator({ room, userId }: { room: Room; userId: string }) {
@@ -64,6 +65,8 @@ export default function MyOrders() {
       <Header title="내 주문" showLogout showHome />
 
       <div className="px-4 pt-4 space-y-6">
+        <PaymentSettings />
+        
         <section>
           <h2 className="font-bold text-gray-700 text-sm mb-3">
             진행 중 {active.length > 0 && <span className="text-primary-500">({active.length})</span>}

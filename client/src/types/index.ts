@@ -9,6 +9,9 @@ export interface User {
   nickname: string;
   latitude?: number | null;
   longitude?: number | null;
+  tossId?: string | null;
+  kakaoPayLink?: string | null;
+  bankAccount?: string | null;
 }
 
 export interface RoomMember {
@@ -60,7 +63,13 @@ export interface Room {
   restaurantUrl?: string | null;
   status: RoomStatus;
   hostId: string;
-  host: { id: string; nickname: string };
+  host: { 
+    id: string; 
+    nickname: string; 
+    tossId?: string | null;
+    kakaoPayLink?: string | null;
+    bankAccount?: string | null;
+  };
   deliveryFee: number;
   minimumOrder: number;
   radiusKm: number;

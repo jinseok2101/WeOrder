@@ -9,8 +9,13 @@ import { useState } from 'react';
 interface Props {
   settlement: Settlement;
   currentUserId: string;
-  hostId: string;
-  hostNickname: string;
+  host: {
+    id: string;
+    nickname: string;
+    tossId?: string | null;
+    kakaoPayLink?: string | null;
+    bankAccount?: string | null;
+  };
   roomId: string;
 }
 
@@ -40,15 +45,14 @@ const STATUS_CONFIG: Record<ShareStatus, { icon: React.ReactNode; label: string;
 export default function SettlementSummary({
   settlement,
   currentUserId,
-  hostId,
-  hostNickname,
+  host,
   roomId,
 }: Props) {
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState<string | null>(null);
 
   const myShare = settlement.shares.find((s) => s.userId === currentUserId);
-  const isHost = currentUserId === hostId;
+  const isHost = currentUserId === host.id;
 
   const handleMarkPaid = async (userId: string) => {
     setLoading(`paid-${userId}`);
@@ -94,7 +98,7 @@ export default function SettlementSummary({
           const statusConf = STATUS_CONFIG[share.status];
           const isMine = share.userId === currentUserId;
           const canPay = isMine && (share.status === 'REQUESTED' || share.status === 'PENDING') && !isHost;
-          const canConfirm = isHost && share.status === 'PAID' && share.userId !== hostId;
+          const canConfirm = isHost && share.status === 'PAID' && share.userId !== host.id;
 
           return (
             <div
@@ -109,7 +113,7 @@ export default function SettlementSummary({
                   <p className="font-semibold text-sm text-gray-900">
                     {share.user.nickname}
                     {isMine && <span className="text-primary-600 ml-1">(나)</span>}
-                    {share.userId === hostId && <span className="text-gray-400 ml-1">(방장)</span>}
+                    {share.userId === host.id && <span className="text-gray-400 ml-1">(방장)</span>}
                   </p>
                   <div className="flex items-center gap-2 text-xs text-gray-400 mt-0.5">
                     <span>메뉴 {formatCurrency(share.menuAmount)}</span>
@@ -119,7 +123,7 @@ export default function SettlementSummary({
                 </div>
                 <div className="text-right">
                   <p className="font-bold text-gray-900">{formatCurrency(share.totalAmount)}</p>
-                  {share.userId !== hostId && (
+                  {share.userId !== host.id && (
                     <div className={cn('flex items-center gap-1 text-xs justify-end mt-0.5', statusConf.className)}>
                       {statusConf.icon}
                       <span>{statusConf.label}</span>
@@ -131,7 +135,7 @@ export default function SettlementSummary({
               {canPay && (
                 <div className="space-y-2">
                   <PayLinkButton
-                    nickname={hostNickname}
+                    host={host}
                     amount={share.totalAmount}
                   />
                   <button

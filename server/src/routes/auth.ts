@@ -71,10 +71,36 @@ router.get('/me', authenticate, async (req: AuthRequest, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.userId },
-      select: { id: true, email: true, nickname: true, latitude: true, longitude: true },
+      select: { 
+        id: true, email: true, nickname: true, latitude: true, longitude: true,
+        tossId: true, kakaoPayLink: true, bankAccount: true 
+      },
     });
     if (!user) return res.status(404).json({ message: '사용자를 찾을 수 없습니다.' });
     res.json(user);
+  } catch {
+    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+  }
+});
+
+router.patch('/me/payment', authenticate, async (req: AuthRequest, res) => {
+  try {
+    const { tossId, kakaoPayLink, bankAccount } = req.body;
+    
+    const updatedUser = await prisma.user.update({
+      where: { id: req.userId },
+      data: {
+        tossId: tossId === '' ? null : tossId,
+        kakaoPayLink: kakaoPayLink === '' ? null : kakaoPayLink,
+        bankAccount: bankAccount === '' ? null : bankAccount,
+      },
+      select: { 
+        id: true, email: true, nickname: true, latitude: true, longitude: true,
+        tossId: true, kakaoPayLink: true, bankAccount: true 
+      },
+    });
+
+    res.json(updatedUser);
   } catch {
     res.status(500).json({ message: '서버 오류가 발생했습니다.' });
   }
