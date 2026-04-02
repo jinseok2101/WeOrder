@@ -74,7 +74,8 @@ export default function RoomDetail() {
         totalMenuAmount: total,
         minimumOrder: room.minimumOrder,
         deliveryFee: room.deliveryFee,
-        isMinimumMet: total >= room.minimumOrder && allMembersHaveOrders,
+        isMinimumMet: total >= room.minimumOrder,
+        allMembersHaveOrders,
         achievementRate: rate,
       });
     }
@@ -145,6 +146,7 @@ export default function RoomDetail() {
     minimumOrder: room.minimumOrder,
     deliveryFee: room.deliveryFee,
     isMinimumMet: false,
+    allMembersHaveOrders: false,
     achievementRate: 0,
   };
 
@@ -160,6 +162,14 @@ export default function RoomDetail() {
     { key: 'chat', label: '채팅' },
     { key: 'settlement', label: '정산' },
   ];
+
+  const getOrderStatusMessage = () => {
+    if (!totals.isMinimumMet) return "최소주문금액을 채워야 주문이 가능해요";
+    if (!totals.allMembersHaveOrders) return "모든 사람이 메뉴를 선택해야 주문이 가능합니다";
+    return "주문을 시작할 준비가 됐나요?";
+  };
+
+  const isOrderStartEnabled = totals.isMinimumMet && totals.allMembersHaveOrders;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -186,7 +196,7 @@ export default function RoomDetail() {
                 "text-sm px-2 py-1 transition-colors",
                 room.status === 'OPEN' 
                   ? "text-gray-400 hover:text-gray-600" 
-                  : "text-gray-300 cursor-not-allowed opacity-50"
+                  : "text-gray-300 cursor-not-allowed opacity-50 font-medium"
               )}
             >
               나가기
@@ -202,7 +212,7 @@ export default function RoomDetail() {
         }
       />
 
-      <div className="px-4 pt-4 space-y-3">
+      <div className="p-4 space-y-4 max-w-2xl mx-auto">
         <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-3">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
@@ -251,20 +261,20 @@ export default function RoomDetail() {
         {isHost && room.status === 'OPEN' && (
           <div className={cn(
             "rounded-2xl p-3 flex items-center justify-between",
-            totals.isMinimumMet ? "bg-amber-50 border border-amber-200" : "bg-gray-50 border border-gray-200"
+            isOrderStartEnabled ? "bg-amber-50 border border-amber-200" : "bg-gray-50 border border-gray-200"
           )}>
             <span className={cn(
               "text-sm font-medium",
-              totals.isMinimumMet ? "text-amber-800" : "text-gray-500"
+              isOrderStartEnabled ? "text-amber-800" : "text-gray-500"
             )}>
-              {totals.isMinimumMet ? "주문을 시작할 준비가 됐나요?" : "최소주문금액을 채워야 주문이 가능해요"}
+              {getOrderStatusMessage()}
             </span>
             <button
               onClick={() => statusMutation.mutate('ORDERING')}
-              disabled={!totals.isMinimumMet}
+              disabled={!isOrderStartEnabled}
               className={cn(
                 "text-xs text-white px-3 py-1.5 rounded-full font-bold transition-colors",
-                totals.isMinimumMet 
+                isOrderStartEnabled 
                   ? "bg-amber-500 hover:bg-amber-600" 
                   : "bg-gray-300 cursor-not-allowed opacity-70"
               )}

@@ -105,4 +105,5 @@ export interface OrderTotals {
   deliveryFee: number;
   isMinimumMet: boolean;
   achievementRate: number;
+  allMembersHaveOrders: boolean;
 }
