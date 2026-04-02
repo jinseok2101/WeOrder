@@ -293,6 +293,11 @@ router.post('/:id/leave', authenticate, async (req: AuthRequest, res) => {
       where: { roomId_userId: { roomId: id, userId } },
     });
 
+    // 파티원이 나갈 때 해당 파티원의 주문 메뉴도 함께 삭제
+    await prisma.orderItem.deleteMany({
+      where: { roomId: id, userId },
+    });
+
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: { nickname: true },
@@ -303,6 +308,16 @@ router.post('/:id/leave', authenticate, async (req: AuthRequest, res) => {
     });
 
     const io = getIo();
+    
+    // 방 상태 최신화를 위해 전체 정보 다시 조회 후 전송 (최소주문금액 달성률 등 업데이트)
+    const updatedRoom = await prisma.room.findUnique({
+      where: { id },
+      include: roomDetailInclude(),
+    });
+    if (updatedRoom) {
+      io.to(id).emit('room:updated', updatedRoom);
+    }
+
     io.to(id).emit('room:member_left', { userId });
     io.to(id).emit('chat:message', {
       id: sysMsg.id,
