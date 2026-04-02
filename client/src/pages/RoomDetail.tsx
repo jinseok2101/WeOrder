@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Users, ExternalLink, ChevronDown, Edit2, MapPin } from 'lucide-react';
+import { Users, ExternalLink, ChevronDown, Edit2, MapPin, Trash2 } from 'lucide-react';
 import { roomsApi } from '../api/rooms';
 import { ordersApi } from '../api/orders';
 import { useAuthStore } from '../store/authStore';
@@ -122,6 +122,14 @@ export default function RoomDetail() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['room', id] }),
   });
 
+  const deleteRoomMutation = useMutation({
+    mutationFn: () => roomsApi.delete(id!),
+    onSuccess: () => {
+      alert('방이 삭제되었습니다.');
+      navigate('/', { replace: true });
+    },
+  });
+
   if (isLoading || !room) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -202,12 +210,23 @@ export default function RoomDetail() {
               나가기
             </button>
           ) : isHost && !['ORDERED', 'SETTLED', 'CANCELLED'].includes(room.status) ? (
-            <button
-              onClick={() => navigate(`/rooms/${id}/edit`)}
-              className="p-2 text-gray-400 hover:text-primary-500 transition-colors"
-            >
-              <Edit2 size={18} />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => navigate(`/rooms/${id}/edit`)}
+                className="p-2 text-gray-400 hover:text-primary-500 transition-colors"
+              >
+                <Edit2 size={18} />
+              </button>
+              <button
+                onClick={() => {
+                  if (confirm('방을 삭제하시겠습니까? 방 안에 있는 모든 데이터가 사라집니다.')) deleteRoomMutation.mutate();
+                }}
+                disabled={deleteRoomMutation.isPending}
+                className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+              >
+                <Trash2 size={18} />
+              </button>
+            </div>
           ) : null
         }
       />

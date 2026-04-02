@@ -50,4 +50,6 @@ export const roomsApi = {
     api.post(`/rooms/${roomId}/settlement`).then((r) => r.data),
   getSettlement: (roomId: string) =>
     api.get(`/rooms/${roomId}/settlement`).then((r) => r.data),
+  delete: (id: string) => 
+    api.delete<{ message: string }>(`/rooms/${id}`).then((r) => r.data),
 };

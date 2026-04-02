@@ -218,6 +218,24 @@ router.patch('/:id', authenticate, async (req: AuthRequest, res) => {
   }
 });
 
+router.delete('/:id', authenticate, async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.params;
+    const room = await prisma.room.findUnique({ where: { id } });
+    if (!room) return res.status(404).json({ message: '방을 찾을 수 없습니다.' });
+    if (room.hostId !== req.userId) return res.status(403).json({ message: '방장만 삭제할 수 있습니다.' });
+
+    // 방 삭제 (Prisma schema에 onDelete: Cascade가 설정되어 있어야 연관 데이터가 같이 삭제됨)
+    await prisma.room.delete({
+      where: { id },
+    });
+
+    res.json({ message: '방이 성공적으로 삭제되었습니다.' });
+  } catch {
+    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+  }
+});
+
 router.get('/:id', authenticate, async (req: AuthRequest, res) => {
   try {
     const room = await prisma.room.findUnique({
