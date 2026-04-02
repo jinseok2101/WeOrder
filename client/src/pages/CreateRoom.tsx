@@ -233,13 +233,16 @@ export default function CreateRoom() {
           </InputField>
 
           <InputField label="마감 시간">
-            <input
-              type="datetime-local"
-              value={form.deadline}
-              onChange={(e) => update('deadline', e.target.value)}
-              min={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
-              className="w-full max-w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 box-border block"
-            />
+            <div className="w-full overflow-hidden rounded-xl border border-gray-200">
+              <input
+                type="datetime-local"
+                value={form.deadline}
+                onChange={(e) => update('deadline', e.target.value)}
+                min={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
+                className="w-full min-w-0 bg-white px-4 py-3 text-sm border-none focus:outline-none focus:ring-2 focus:ring-primary-500 box-border block"
+                style={{ WebkitAppearance: 'none' }}
+              />
+            </div>
           </InputField>
         </div>
 
