@@ -107,8 +107,8 @@ export default function CreateRoom() {
 
     if (!form.title.trim()) return setError('방 제목을 입력해주세요.');
     if (!form.restaurantName.trim()) return setError('식당 이름을 입력해주세요.');
-    if (!form.deliveryFee) return setError('배달비를 입력해주세요.');
-    if (!form.minimumOrder) return setError('최소주문금액을 입력해주세요.');
+    if (form.deliveryFee === '') return setError('배달비를 입력해주세요.');
+    if (form.minimumOrder === '') return setError('최소주문금액을 입력해주세요.');
     if (!form.pickupLocation.trim()) return setError('수령 장소를 입력해주세요. (예: 기숙사 정문)');
     if (!form.deadline) return setError('마감 시간을 설정해주세요.');
     

@@ -140,7 +140,7 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
       deadline,
     } = req.body;
 
-    if (!title || !restaurantName || !deliveryFee || !minimumOrder || !pickupLocation || !latitude || !longitude || !deadline) {
+    if (!title || !restaurantName || deliveryFee === undefined || deliveryFee === null || !minimumOrder || !pickupLocation || !latitude || !longitude || !deadline) {
       return res.status(400).json({ message: '필수 항목을 모두 입력해주세요.' });
     }
 
