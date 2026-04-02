@@ -285,6 +285,9 @@ router.post('/:id/leave', authenticate, async (req: AuthRequest, res) => {
     if (room.hostId === userId) {
       return res.status(400).json({ message: '방장은 나갈 수 없습니다. 방을 취소해주세요.' });
     }
+    if (room.status !== 'OPEN') {
+      return res.status(400).json({ message: '주문이 이미 시작되었거나 완료되어 방을 나갈 수 없습니다.' });
+    }
 
     await prisma.roomMember.delete({
       where: { roomId_userId: { roomId: id, userId } },

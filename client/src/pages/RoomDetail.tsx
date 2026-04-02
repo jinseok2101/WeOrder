@@ -171,7 +171,13 @@ export default function RoomDetail() {
               onClick={() => {
                 if (confirm('방에서 나가시겠습니까?')) leaveMutation.mutate();
               }}
-              className="text-sm text-gray-400 hover:text-gray-600 px-2 py-1"
+              disabled={room.status !== 'OPEN'}
+              className={cn(
+                "text-sm px-2 py-1 transition-colors",
+                room.status === 'OPEN' 
+                  ? "text-gray-400 hover:text-gray-600" 
+                  : "text-gray-300 cursor-not-allowed opacity-50"
+              )}
             >
               나가기
             </button>
