@@ -339,7 +339,7 @@ router.patch('/:id/status', authenticate, async (req: AuthRequest, res) => {
 
     const room = await prisma.room.findUnique({ 
       where: { id },
-      include: { orderItems: true }
+      include: { orderItems: true, members: true }
     });
     if (!room) return res.status(404).json({ message: '방을 찾을 수 없습니다.' });
     if (room.hostId !== req.userId) return res.status(403).json({ message: '방장만 상태를 변경할 수 있습니다.' });
@@ -348,6 +348,15 @@ router.patch('/:id/status', authenticate, async (req: AuthRequest, res) => {
       const totalMenuAmount = room.orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       if (totalMenuAmount < room.minimumOrder) {
         return res.status(400).json({ message: '최소 주문 금액을 채워야 주문을 시작할 수 있습니다.' });
+      }
+
+      // 모든 멤버가 최소 1개 이상의 메뉴를 주문했는지 확인
+      const allMembersHaveOrders = room.members.every((m) => 
+        room.orderItems.some((item) => item.userId === m.userId)
+      );
+
+      if (!allMembersHaveOrders) {
+        return res.status(400).json({ message: '방에 있는 모든 사람이 메뉴를 하나 이상 선택해야 주문이 가능합니다.' });
       }
     }
 

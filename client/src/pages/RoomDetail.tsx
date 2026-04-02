@@ -53,18 +53,28 @@ export default function RoomDetail() {
 
   useEffect(() => {
     if (room) {
-      const total = (room.orderItems || []).reduce(
+      const items = room.orderItems || [];
+      const members = room.members || [];
+      
+      const total = items.reduce(
         (sum, item) => sum + item.price * item.quantity,
         0
       );
+
+      // 모든 멤버가 최소 1개 이상의 메뉴를 추가했는지 확인
+      const allMembersHaveOrders = members.every((m) => 
+        items.some((item) => item.userId === m.userId)
+      );
+
       const rate = room.minimumOrder > 0
         ? Math.min(100, Math.round((total / room.minimumOrder) * 100))
         : 100;
+
       setOrderTotals({
         totalMenuAmount: total,
         minimumOrder: room.minimumOrder,
         deliveryFee: room.deliveryFee,
-        isMinimumMet: total >= room.minimumOrder,
+        isMinimumMet: total >= room.minimumOrder && allMembersHaveOrders,
         achievementRate: rate,
       });
     }
