@@ -238,7 +238,7 @@ export default function CreateRoom() {
               value={form.deadline}
               onChange={(e) => update('deadline', e.target.value)}
               min={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
-              className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full max-w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 box-border block"
             />
           </InputField>
         </div>
