@@ -22,6 +22,6 @@ const io = new Server(httpServer, {
 initIo(io);
 setupSocket(io);
 
-httpServer.listen(PORT, () => {
-  console.log(`WeOrder server running on http://localhost:${PORT}`);
+httpServer.listen(Number(PORT), '0.0.0.0', () => {
+  console.log(`WeOrder server running on port ${PORT}`);
 });
