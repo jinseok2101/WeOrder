@@ -161,25 +161,48 @@ export default function Home() {
     );
   };
 
-  const handleFindMe = async () => {
+  const handleFindMe = () => {
     setRoadAddress("현재 위치 찾는 중...");
-    try {
-      const res = await fetch("https://get.geojs.io/v1/ip/geo.json");
-      const data = await res.json();
-      const lat = parseFloat(data.latitude);
-      const lng = parseFloat(data.longitude);
-      setLocation(lat, lng);
+    
+    const fallbackToIP = async () => {
+      try {
+        const res = await fallbackFetch("https://get.geojs.io/v1/ip/geo.json");
+        const data = await res.json();
+        const lat = parseFloat(data.latitude);
+        const lng = parseFloat(data.longitude);
+        updateMapLocation(lat, lng);
+      } catch (e) {
+        setRoadAddress("위치를 가져오지 못했어요.");
+      }
+    };
 
+    const updateMapLocation = (lat: number, lng: number) => {
+      setLocation(lat, lng);
       const naver = (window as any).naver;
       if (naver && mapRef.current) {
         const center = new naver.maps.LatLng(lat, lng);
         mapRef.current.panTo(center);
         fetchAddress(lat, lng);
       }
-    } catch (e) {
-      setRoadAddress("위치를 가져오지 못했어요.");
+    };
+
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          updateMapLocation(position.coords.latitude, position.coords.longitude);
+        },
+        () => {
+          fallbackToIP();
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    } else {
+      fallbackToIP();
     }
   };
+
+  // 기존 코드와의 충돌을 피하기 위한 간단한 fetch alias
+  const fallbackFetch = fetch;
 
   useEffect(() => {
     if (
