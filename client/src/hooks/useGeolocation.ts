@@ -7,7 +7,7 @@ interface GeolocationState {
   error: string | null;
   loading: boolean;
   setLocation: (lat: number, lng: number) => void;
-  fetchIPLocation: () => Promise<void>;
+  fetchLocation: () => Promise<void>;
 }
 
 // Zustand를 사용하여 위치 정보를 전역 상태로 관리
@@ -17,34 +17,65 @@ const useGeoStore = create<GeolocationState>((set, get) => ({
   error: null,
   loading: true,
   setLocation: (lat: number, lng: number) => {
-    set({ latitude: lat, longitude: lng, error: null });
+    set({ latitude: lat, longitude: lng, error: null, loading: false });
   },
-  fetchIPLocation: async () => {
-    // 이미 지정된 위치(예: 사용자가 지도를 움직여 설정하거나 저장된 주소를 클릭한 경우)가 있다면 무시
+  fetchLocation: async () => {
+    // 이미 지정된 위치가 있다면 무시
     if (get().latitude !== null) return;
     
-    try {
-      const res = await fetch('https://get.geojs.io/v1/ip/geo.json');
-      if (!res.ok) throw new Error('Network error');
-      const data = await res.json();
-      
-      // 비동기 요청 도중에 다른 위치가 설정되었을 수 있으므로 한 번 더 검사
-      if (get().latitude !== null) return;
-      
-      set({
-        latitude: parseFloat(data.latitude),
-        longitude: parseFloat(data.longitude),
-        error: null,
-        loading: false,
-      });
-    } catch {
-      if (get().latitude !== null) return;
-      set({
-        latitude: 37.5665,
-        longitude: 126.978,
-        error: '네트워크 문제로 대략적 위치를 찾지 못했습니다. 서울 중심부로 설정됩니다.',
-        loading: false,
-      });
+    set({ loading: true });
+
+    // IP 기반 위치 조회 (Fallback)
+    const fetchIPLocation = async () => {
+      try {
+        const res = await fetch('https://get.geojs.io/v1/ip/geo.json');
+        if (!res.ok) throw new Error('Network error');
+        const data = await res.json();
+        
+        if (get().latitude !== null) return;
+        
+        set({
+          latitude: parseFloat(data.latitude),
+          longitude: parseFloat(data.longitude),
+          error: null,
+          loading: false,
+        });
+      } catch {
+        if (get().latitude !== null) return;
+        set({
+          latitude: 37.5665,
+          longitude: 126.978, // 서울시청 기본 좌표
+          error: '위치 정보를 가져오지 못해 기본 위치로 설정되었습니다.',
+          loading: false,
+        });
+      }
+    };
+
+    // 1. 디바이스의 정확한 GPS 조회 시도
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          if (get().latitude !== null) return;
+          set({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            error: null,
+            loading: false,
+          });
+        },
+        (error) => {
+          console.warn('위치 권한 거부 또는 조회 실패, IP 위치로 대체합니다.', error);
+          fetchIPLocation();
+        },
+        {
+          enableHighAccuracy: true, // GPS 칩셋 등 고정밀 장치 사용
+          timeout: 10000,           // 최대 대기 시간 10초
+          maximumAge: 0,            // 캐시된 위치 대신 최신 위치 강제 요망
+        }
+      );
+    } else {
+      // API 미지원 브라우저
+      fetchIPLocation();
     }
   }
 }));
@@ -53,8 +84,8 @@ export function useGeolocation() {
   const store = useGeoStore();
 
   useEffect(() => {
-    // 컴포넌트 마운트 시 최초 1회만 IP 위치 조회 수동 시작 (이미 위치가 있다면 스토어 내부에서 무시됨)
-    store.fetchIPLocation();
+    // 컴포넌트 마운트 시 최우선적으로 디바이스 GPS 위치 조회
+    store.fetchLocation();
   }, []);
 
   return {
