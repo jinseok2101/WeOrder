@@ -191,7 +191,10 @@ export default function Home() {
         (position) => {
           updateMapLocation(position.coords.latitude, position.coords.longitude);
         },
-        () => {
+        (error) => {
+          if (error.code === error.PERMISSION_DENIED) {
+            alert("⚠️ 위치 권한이 차단되어 있습니다.\n모바일(Safari 등) 설정에서 위치 접근을 '허용'해야 정확한 내 위치를 찾을 수 있습니다.");
+          }
           fallbackToIP();
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
