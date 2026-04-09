@@ -182,6 +182,8 @@ export default function Home() {
       if (naver && mapRef.current) {
         const center = new naver.maps.LatLng(lat, lng);
         mapRef.current.panTo(center);
+        if (markerRef.current) markerRef.current.setPosition(center);
+        if (infoWindowRef.current) infoWindowRef.current.open(mapRef.current, markerRef.current);
         fetchAddress(lat, lng);
       }
     };
