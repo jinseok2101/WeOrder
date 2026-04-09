@@ -28,7 +28,7 @@ const useGeoStore = create<GeolocationState>((set, get) => ({
     // IP 기반 위치 조회 (Fallback)
     const fetchIPLocation = async () => {
       try {
-        const res = await fetch('https://get.geojs.io/v1/ip/geo.json');
+        const res = await fetch('https://freeipapi.com/api/json');
         if (!res.ok) throw new Error('Network error');
         const data = await res.json();
         

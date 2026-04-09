@@ -166,7 +166,7 @@ export default function Home() {
     
     const fallbackToIP = async () => {
       try {
-        const res = await fallbackFetch("https://get.geojs.io/v1/ip/geo.json");
+        const res = await fallbackFetch("https://freeipapi.com/api/json");
         const data = await res.json();
         const lat = parseFloat(data.latitude);
         const lng = parseFloat(data.longitude);
