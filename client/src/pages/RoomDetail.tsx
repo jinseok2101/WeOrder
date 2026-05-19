@@ -336,7 +336,7 @@ export default function RoomDetail() {
               )}
             >
               {t.label}
-              {t.key === 'chat' && messages.length > 0 && (
+              {t.key === 'chat' && isMember && messages.length > 0 && (
                 <span className="ml-1 text-xs text-gray-400">({messages.length})</span>
               )}
             </button>
