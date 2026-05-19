@@ -264,7 +264,7 @@ export default function Home() {
         borderWidth: 0,
         backgroundColor: "transparent",
         disableAnchor: true,
-        pixelOffset: new naver.maps.Point(0, -10),
+        pixelOffset: new naver.maps.Point(0, -42),
       });
 
       fetchAddress(latitude, longitude);
