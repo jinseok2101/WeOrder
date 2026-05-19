@@ -20,7 +20,14 @@ export function setupSocket(io: Server): void {
     const userId: string = socket.data.userId;
 
     socket.on('room:join', async (roomId: string) => {
-      await socket.join(roomId);
+      const member = await prisma.roomMember.findUnique({
+        where: { roomId_userId: { roomId, userId } },
+      });
+      if (member) {
+        await socket.join(roomId);
+      } else {
+        socket.emit('error', { message: '방 참여자만 참여할 수 있습니다.' });
+      }
     });
 
     socket.on('room:leave', (roomId: string) => {
@@ -31,6 +38,13 @@ export function setupSocket(io: Server): void {
       if (!content?.trim()) return;
 
       try {
+        const member = await prisma.roomMember.findUnique({
+          where: { roomId_userId: { roomId, userId } },
+        });
+        if (!member) {
+          return socket.emit('error', { message: '방 참여자만 메시지를 보낼 수 있습니다.' });
+        }
+
         const message = await prisma.chatMessage.create({
           data: { roomId, userId, content: content.trim(), type: 'USER' },
           include: { user: { select: { id: true, nickname: true } } },

@@ -457,6 +457,13 @@ router.get('/:roomId/chat', authenticate, async (req: AuthRequest, res) => {
     const { roomId } = req.params;
     const cursor = req.query.cursor as string | undefined;
 
+    const member = await prisma.roomMember.findUnique({
+      where: { roomId_userId: { roomId, userId: req.userId! } },
+    });
+    if (!member) {
+      return res.status(403).json({ message: '방 참여자만 채팅을 볼 수 있습니다.' });
+    }
+
     const messages = await prisma.chatMessage.findMany({
       where: {
         roomId,

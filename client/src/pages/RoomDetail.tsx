@@ -359,71 +359,77 @@ export default function RoomDetail() {
         )}
 
         {tab === 'chat' && (
-          <div className="flex flex-col" style={{ height: 'calc(100vh - 320px)' }}>
-            <div className="flex-1 overflow-y-auto space-y-2 pr-1">
-              {messages.length === 0 && (
-                <p className="text-center text-sm text-gray-400 py-8">
-                  아직 메시지가 없습니다.
-                </p>
-              )}
-              {messages.map((msg) => {
-                if (msg.type === 'SYSTEM') {
+          !isMember ? (
+            <div className="flex flex-col items-center justify-center py-20 text-gray-400 text-sm bg-white rounded-2xl border border-gray-100 min-h-[300px]">
+              방 참여자만 채팅을 볼 수 있습니다.
+            </div>
+          ) : (
+            <div className="flex flex-col" style={{ height: 'calc(100vh - 320px)' }}>
+              <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+                {messages.length === 0 && (
+                  <p className="text-center text-sm text-gray-400 py-8">
+                    아직 메시지가 없습니다.
+                  </p>
+                )}
+                {messages.map((msg) => {
+                  if (msg.type === 'SYSTEM') {
+                    return (
+                      <div key={msg.id} className="flex justify-center">
+                        <span className="bg-gray-100 text-gray-500 text-xs px-3 py-1 rounded-full">
+                          {msg.content}
+                        </span>
+                      </div>
+                    );
+                  }
+                  const isMe = msg.userId === user?.id || msg.user?.id === user?.id;
                   return (
-                    <div key={msg.id} className="flex justify-center">
-                      <span className="bg-gray-100 text-gray-500 text-xs px-3 py-1 rounded-full">
-                        {msg.content}
-                      </span>
+                    <div key={msg.id} className={cn('flex gap-2', isMe && 'flex-row-reverse')}>
+                      {!isMe && (
+                        <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0 text-primary-700 text-xs font-bold">
+                          {msg.user?.nickname?.[0] ?? '?'}
+                        </div>
+                      )}
+                      <div className={cn('max-w-[70%]', isMe && 'items-end flex flex-col')}>
+                        {!isMe && (
+                          <p className="text-xs text-gray-500 mb-1 ml-1">{msg.user?.nickname}</p>
+                        )}
+                        <div
+                          className={cn(
+                            'px-3 py-2 rounded-2xl text-sm',
+                            isMe
+                              ? 'bg-primary-500 text-white rounded-tr-sm'
+                              : 'bg-white border border-gray-100 text-gray-800 rounded-tl-sm'
+                          )}
+                        >
+                          {msg.content}
+                        </div>
+                      </div>
                     </div>
                   );
-                }
-                const isMe = msg.userId === user?.id || msg.user?.id === user?.id;
-                return (
-                  <div key={msg.id} className={cn('flex gap-2', isMe && 'flex-row-reverse')}>
-                    {!isMe && (
-                      <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0 text-primary-700 text-xs font-bold">
-                        {msg.user?.nickname?.[0] ?? '?'}
-                      </div>
-                    )}
-                    <div className={cn('max-w-[70%]', isMe && 'items-end flex flex-col')}>
-                      {!isMe && (
-                        <p className="text-xs text-gray-500 mb-1 ml-1">{msg.user?.nickname}</p>
-                      )}
-                      <div
-                        className={cn(
-                          'px-3 py-2 rounded-2xl text-sm',
-                          isMe
-                            ? 'bg-primary-500 text-white rounded-tr-sm'
-                            : 'bg-white border border-gray-100 text-gray-800 rounded-tl-sm'
-                        )}
-                      >
-                        {msg.content}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-              <div ref={chatEndRef} />
-            </div>
+                })}
+                <div ref={chatEndRef} />
+              </div>
 
-            {isMember && (
-              <form onSubmit={handleSendChat} className="flex gap-2 mt-3 pb-2">
-                <input
-                  type="text"
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  placeholder="메시지 입력..."
-                  className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-                <button
-                  type="submit"
-                  disabled={!chatInput.trim()}
-                  className="bg-primary-500 text-white px-4 rounded-xl text-sm font-bold hover:bg-primary-600 disabled:opacity-40 transition-colors"
-                >
-                  전송
-                </button>
-              </form>
-            )}
-          </div>
+              {isMember && (
+                <form onSubmit={handleSendChat} className="flex gap-2 mt-3 pb-2">
+                  <input
+                    type="text"
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    placeholder="메시지 입력..."
+                    className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!chatInput.trim()}
+                    className="bg-primary-500 text-white px-4 rounded-xl text-sm font-bold hover:bg-primary-600 disabled:opacity-40 transition-colors"
+                  >
+                    전송
+                  </button>
+                </form>
+              )}
+            </div>
+          )
         )}
 
         {tab === 'settlement' && (
