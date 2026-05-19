@@ -1,0 +1,60 @@
+{
+  "expo": {
+    "name": "WeOrder",
+    "slug": "weorder-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.weorder.app",
+      "infoPlist": {
+        "NMFClientId": "2o8llg6zkn",
+        "NSLocationWhenInUseUsageDescription": "사용자의 위치를 기반으로 주변의 주문 방을 찾기 위해 권한이 필요합니다.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "사용자의 위치를 기반으로 주변의 주문 방을 찾기 위해 권한이 필요합니다.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.weorder.app",
+      "config": {
+        "googleMaps": {
+          "apiKey": ""
+        }
+      },
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ],
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "사용자의 위치를 기반으로 주변의 주문 방을 찾기 위해 권한이 필요합니다."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "7f1d5e48-618f-400f-ad66-40e68bf810f8"
+      }
+    }
+  }
+}
