@@ -2,6 +2,7 @@ import { type ReactNode, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import { connectSocket } from './socket/socket';
+import { authApi } from './api/auth';
 import Auth from './pages/Auth';
 import Home from './pages/Home';
 import CreateRoom from './pages/CreateRoom';
@@ -16,9 +17,14 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
 
 export default function App() {
   useEffect(() => {
-    const { token, isAuthenticated } = useAuthStore.getState();
+    const { token, isAuthenticated, setUser } = useAuthStore.getState();
     if (isAuthenticated && token) {
       connectSocket(token);
+      
+      // 앱 실행 시 최신 프로필 정보(계좌 등) 동기화
+      authApi.me()
+        .then((user) => setUser(user))
+        .catch((err) => console.warn('프로필 동기화 실패:', err));
     }
   }, []);
 
