@@ -238,6 +238,24 @@ export default function Home() {
         map: mapRef.current,
         // 배민 스타일처럼 마커 자체는 움직이지 못하게 (오직 지도만 드래그)
         draggable: false,
+        icon: {
+          content: `
+            <div style="
+              position: absolute; 
+              transform: translate(-50%, -34px); 
+              display: flex; 
+              flex-direction: column; 
+              align-items: center;
+            ">
+              <!-- 파란색 SVG 마커 핀 (내 위치) -->
+              <svg width="26" height="34" viewBox="0 0 28 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0px 2px 3px rgba(0,0,0,0.25));">
+                <path d="M14 0C6.26801 0 0 6.26801 0 14C0 24.5 14 36 14 36C14 36 28 24.5 28 14C28 6.26801 21.732 0 14 0Z" fill="#3b82f6"/>
+                <circle cx="14" cy="14" r="5" fill="white"/>
+              </svg>
+            </div>
+          `,
+          anchor: new naver.maps.Point(0, 0),
+        },
       });
 
       infoWindowRef.current = new naver.maps.InfoWindow({
@@ -321,20 +339,36 @@ export default function Home() {
         icon: {
           content: `
             <div style="
-              background-color: #FF5A5F; 
-              color: white; 
-              padding: 4px 8px; 
-              border-radius: 12px; 
-              font-size: 12px; 
-              font-weight: bold; 
-              box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-              white-space: nowrap;
-              border: 2px solid white;
+              position: absolute; 
+              transform: translate(-50%, -100%); 
+              display: flex; 
+              flex-direction: column; 
+              align-items: center;
             ">
-               ${room.restaurantName}
+              <!-- 식당 이름 캡션 (위) -->
+              <div style="
+                background-color: white;
+                color: #059669;
+                padding: 3px 8px;
+                border-radius: 8px;
+                font-size: 11px;
+                font-weight: 800;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+                white-space: nowrap;
+                border: 1px solid #d1fae5;
+                margin-bottom: 4px;
+              ">
+                ${room.restaurantName}
+              </div>
+
+              <!-- 초록색 SVG 마커 핀 (아래) -->
+              <svg width="26" height="34" viewBox="0 0 28 36" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0px 2px 3px rgba(0,0,0,0.25));">
+                <path d="M14 0C6.26801 0 0 6.26801 0 14C0 24.5 14 36 14 36C14 36 28 24.5 28 14C28 6.26801 21.732 0 14 0Z" fill="#10b981"/>
+                <circle cx="14" cy="14" r="5" fill="white"/>
+              </svg>
             </div>
           `,
-          anchor: new naver.maps.Point(20, 30),
+          anchor: new naver.maps.Point(0, 0),
         },
       });
 
