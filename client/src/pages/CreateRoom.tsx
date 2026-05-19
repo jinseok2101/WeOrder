@@ -25,6 +25,23 @@ function InputField({
   );
 }
 
+const formatLocalDate = (d: Date) => {
+  const pad = (num: number) => String(num).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  const mm = pad(d.getMonth() + 1);
+  const dd = pad(d.getDate());
+  const hh = pad(d.getHours());
+  const min = pad(d.getMinutes());
+  return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+};
+
+const getDefaultDeadline = () => {
+  const d = new Date();
+  d.setHours(d.getHours() + 1);
+  d.setMinutes(Math.ceil(d.getMinutes() / 5) * 5, 0, 0);
+  return formatLocalDate(d);
+};
+
 export default function CreateRoom() {
   const { id } = useParams<{ id: string }>();
   const isEdit = !!id;
@@ -38,7 +55,7 @@ export default function CreateRoom() {
     deliveryFee: '',
     minimumOrder: '',
     pickupLocation: '',
-    deadline: '',
+    deadline: getDefaultDeadline(),
   });
   const [error, setError] = useState('');
   const [dongName, setDongName] = useState('');
@@ -67,7 +84,7 @@ export default function CreateRoom() {
   useEffect(() => {
     if (isEdit && roomData) {
       const d = new Date(roomData.deadline);
-      const localISO = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+      const localISO = formatLocalDate(d);
       
       setForm({
         title: roomData.title,
@@ -92,14 +109,6 @@ export default function CreateRoom() {
       setError(msg);
     },
   });
-
-  const getDefaultDeadline = () => {
-    const d = new Date();
-    d.setHours(d.getHours() + 1);
-    d.setMinutes(Math.ceil(d.getMinutes() / 5) * 5, 0, 0);
-    // 로컬 시간 기준으로 YYYY-MM-DDTHH:mm 포맷 생성
-    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -238,7 +247,7 @@ export default function CreateRoom() {
                 type="datetime-local"
                 value={form.deadline}
                 onChange={(e) => update('deadline', e.target.value)}
-                min={new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16)}
+                min={formatLocalDate(new Date())}
                 className="w-full min-w-0 bg-white px-4 py-3 text-sm border-none focus:outline-none focus:ring-2 focus:ring-primary-500 box-border block"
                 style={{ WebkitAppearance: 'none' }}
               />
