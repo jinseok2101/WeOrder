@@ -23,4 +23,10 @@ export const authApi = {
   me: () => api.get<User>('/auth/me').then((r) => r.data),
   updatePayment: (data: { tossId?: string | null; kakaoPayLink?: string | null; bankAccount?: string | null }) =>
     api.patch<User>('/auth/me/payment', data).then((r) => r.data),
+  updateNotifications: (data: { notifyChat?: boolean; notifyRoomStatus?: boolean; notifySettlement?: boolean }) =>
+    api.patch<User>('/auth/me/notifications', data).then((r) => r.data),
+  subscribePush: (data: { type: string; endpoint: string; p256dh?: string | null; auth?: string | null }) =>
+    api.post('/auth/me/push-subscription', data).then((r) => r.data),
+  unsubscribePush: (data: { endpoint: string }) =>
+    api.delete('/auth/me/push-subscription', { data }).then((r) => r.data),
 };

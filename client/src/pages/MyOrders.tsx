@@ -8,6 +8,7 @@ import Header from '../components/layout/Header';
 import BottomNav from '../components/layout/BottomNav';
 import RoomStatusBadge from '../components/room/RoomStatusBadge';
 import PaymentSettings from '../components/settlement/PaymentSettings';
+import NotificationSettings from '../components/settlement/NotificationSettings';
 import { cn, formatCurrency, formatDate } from '../lib/utils';
 
 function SettlementIndicator({ room, userId }: { room: Room; userId: string }) {
@@ -66,6 +67,7 @@ export default function MyOrders() {
 
       <div className="px-4 pt-4 space-y-6">
         <PaymentSettings />
+        <NotificationSettings />
         
         <section>
           <h2 className="font-bold text-gray-700 text-sm mb-3">
