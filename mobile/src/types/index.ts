@@ -12,6 +12,9 @@ export interface User {
   tossId?: string | null;
   kakaoPayLink?: string | null;
   bankAccount?: string | null;
+  notifyChat?: boolean;
+  notifyRoomStatus?: boolean;
+  notifySettlement?: boolean;
 }
 
 export interface RoomMember {

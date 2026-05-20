@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigation } from '@react-navigation/native';
@@ -11,6 +11,7 @@ import Header from '../components/layout/Header';
 import BottomNav from '../components/layout/BottomNav';
 import RoomStatusBadge from '../components/room/RoomStatusBadge';
 import PaymentSettings from '../components/settlement/PaymentSettings';
+import NotificationSettings from '../components/settlement/NotificationSettings';
 import { formatCurrency, formatDate } from '../lib/utils';
 
 function SettlementIndicator({ room, userId }: { room: Room; userId: string }) {
@@ -69,6 +70,7 @@ export default function MyOrdersScreen() {
 
       <ScrollView className="px-4 pt-4" contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
         <PaymentSettings />
+        <NotificationSettings />
         
         <View className="mb-6">
           <Text className="font-bold text-gray-700 text-sm mb-3">

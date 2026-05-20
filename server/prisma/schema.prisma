@@ -18,14 +18,21 @@ model User {
   tossId       String?
   kakaoPayLink String?
   bankAccount  String?
+  
+  // 알림 여부 설정 (개별 온/오프 가능)
+  notifyChat         Boolean @default(true)
+  notifyRoomStatus   Boolean @default(true)
+  notifySettlement   Boolean @default(true)
+  
   createdAt    DateTime @default(now())
 
-  hostedRooms      Room[]            @relation("RoomHost")
-  memberships      RoomMember[]
-  orderItems       OrderItem[]
-  settlementShares SettlementShare[]
-  chatMessages     ChatMessage[]
-  addresses        UserAddress[]
+  hostedRooms       Room[]            @relation("RoomHost")
+  memberships       RoomMember[]
+  orderItems        OrderItem[]
+  settlementShares  SettlementShare[]
+  chatMessages      ChatMessage[]
+  addresses         UserAddress[]
+  pushSubscriptions PushSubscription[]
 }
 
 model UserAddress {
@@ -151,4 +158,15 @@ model ChatMessage {
 enum MessageType {
   USER
   SYSTEM
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // "WEB" (VAPID) 또는 "APP" (Expo)
+  endpoint  String   @unique // Web Push의 수신 URL 또는 Expo Push Token
+  p256dh    String?  // Web Push 암호화용 퍼블릭 키 (WEB 전용)
+  auth      String?  // Web Push 암호화용 인증 키 (WEB 전용)
+  createdAt DateTime @default(now())
 }

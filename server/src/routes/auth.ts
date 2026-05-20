@@ -73,7 +73,8 @@ router.get('/me', authenticate, async (req: AuthRequest, res) => {
       where: { id: req.userId },
       select: { 
         id: true, email: true, nickname: true, latitude: true, longitude: true,
-        tossId: true, kakaoPayLink: true, bankAccount: true 
+        tossId: true, kakaoPayLink: true, bankAccount: true,
+        notifyChat: true, notifyRoomStatus: true, notifySettlement: true
       },
     });
     if (!user) return res.status(404).json({ message: '사용자를 찾을 수 없습니다.' });
@@ -96,13 +97,91 @@ router.patch('/me/payment', authenticate, async (req: AuthRequest, res) => {
       },
       select: { 
         id: true, email: true, nickname: true, latitude: true, longitude: true,
-        tossId: true, kakaoPayLink: true, bankAccount: true 
+        tossId: true, kakaoPayLink: true, bankAccount: true,
+        notifyChat: true, notifyRoomStatus: true, notifySettlement: true
       },
     });
 
     res.json(updatedUser);
   } catch {
     res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+  }
+});
+
+// 알림 여부 설정 변경 라우트
+router.patch('/me/notifications', authenticate, async (req: AuthRequest, res) => {
+  try {
+    const { notifyChat, notifyRoomStatus, notifySettlement } = req.body;
+    
+    const updatedUser = await prisma.user.update({
+      where: { id: req.userId },
+      data: {
+        notifyChat: notifyChat !== undefined ? notifyChat : undefined,
+        notifyRoomStatus: notifyRoomStatus !== undefined ? notifyRoomStatus : undefined,
+        notifySettlement: notifySettlement !== undefined ? notifySettlement : undefined,
+      },
+      select: { 
+        id: true, email: true, nickname: true, latitude: true, longitude: true,
+        tossId: true, kakaoPayLink: true, bankAccount: true,
+        notifyChat: true, notifyRoomStatus: true, notifySettlement: true
+      },
+    });
+
+    res.json(updatedUser);
+  } catch {
+    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+  }
+});
+
+// 기기 푸시 구독 등록 라우트
+router.post('/me/push-subscription', authenticate, async (req: AuthRequest, res) => {
+  try {
+    const { type, endpoint, p256dh, auth } = req.body;
+    if (!type || !endpoint) {
+      return res.status(400).json({ message: '필수 구독 정보가 누락되었습니다.' });
+    }
+
+    const subscription = await prisma.pushSubscription.upsert({
+      where: { endpoint },
+      update: {
+        userId: req.userId,
+        type,
+        p256dh: p256dh || null,
+        auth: auth || null,
+      },
+      create: {
+        userId: req.userId,
+        type,
+        endpoint,
+        p256dh: p256dh || null,
+        auth: auth || null,
+      },
+    });
+
+    res.status(201).json(subscription);
+  } catch (err) {
+    res.status(500).json({ message: '구독 등록 중 오류가 발생했습니다.' });
+  }
+});
+
+// 기기 푸시 구독 해제 라우트
+router.delete('/me/push-subscription', authenticate, async (req: AuthRequest, res) => {
+  try {
+    const { endpoint } = req.body;
+    if (!endpoint) {
+      return res.status(400).json({ message: '해지할 수신처가 지정되지 않았습니다.' });
+    }
+
+    await prisma.pushSubscription.deleteMany({
+      where: {
+        userId: req.userId,
+        endpoint,
+      },
+    });
+
+    res.json({ message: '구독 해지 완료' });
+  } catch {
+    res.status(500).json({ message: '구독 해지 중 오류가 발생했습니다.' });
   }
 });
 
