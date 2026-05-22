@@ -67,7 +67,6 @@ export default function Auth() {
               type="email"
               value={form.email}
               onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-              placeholder="designnas@gmail.com"
               className="w-full bg-gray-100 border-0 rounded-2xl px-5 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder-gray-400"
             />
           </div>
@@ -79,7 +78,6 @@ export default function Auth() {
                 type="text"
                 value={form.nickname}
                 onChange={(e) => setForm((f) => ({ ...f, nickname: e.target.value }))}
-                placeholder="위오더닉네임"
                 maxLength={20}
                 className="w-full bg-gray-100 border-0 rounded-2xl px-5 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder-gray-400"
               />
@@ -93,7 +91,6 @@ export default function Auth() {
                 type={showPw ? 'text' : 'password'}
                 value={form.password}
                 onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-                placeholder="••••••••••••"
                 className="w-full bg-gray-100 border-0 rounded-2xl px-5 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 pr-12 placeholder-gray-400"
               />
               <button

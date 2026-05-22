@@ -57,10 +57,8 @@ export default function AuthScreen() {
             <TextInput
               value={form.email}
               onChangeText={(text) => setForm((f) => ({ ...f, email: text }))}
-              placeholder="designnas@gmail.com"
               keyboardType="email-address"
               autoCapitalize="none"
-              placeholderTextColor="#9ca3af"
               className="w-full bg-gray-100 rounded-2xl px-5 py-3.5 text-sm"
             />
           </View>
@@ -71,9 +69,7 @@ export default function AuthScreen() {
               <TextInput
                 value={form.nickname}
                 onChangeText={(text) => setForm((f) => ({ ...f, nickname: text }))}
-                placeholder="위오더닉네임"
                 maxLength={20}
-                placeholderTextColor="#9ca3af"
                 className="w-full bg-gray-100 rounded-2xl px-5 py-3.5 text-sm"
               />
             </View>
@@ -86,8 +82,6 @@ export default function AuthScreen() {
                 secureTextEntry={!showPw}
                 value={form.password}
                 onChangeText={(text) => setForm((f) => ({ ...f, password: text }))}
-                placeholder="••••••••••••"
-                placeholderTextColor="#9ca3af"
                 className="w-full bg-gray-100 rounded-2xl px-5 py-3.5 text-sm pr-12"
               />
               <TouchableOpacity
