@@ -113,7 +113,11 @@ export default function RoomDetailScreen() {
 
   const leaveMutation = useMutation({
     mutationFn: () => roomsApi.leave(id!),
-    onSuccess: () => navigation.navigate("Home"),
+    onSuccess: () => {
+      queryClient.removeQueries({ queryKey: ["room", id] });
+      queryClient.invalidateQueries({ queryKey: ["rooms"] });
+      navigation.navigate("Home");
+    },
   });
 
   const statusMutation = useMutation({
@@ -247,6 +251,8 @@ export default function RoomDetailScreen() {
                     text: "나가기",
                     style: "destructive",
                     onPress: () => {
+                      queryClient.removeQueries({ queryKey: ["room", id] });
+                      queryClient.invalidateQueries({ queryKey: ["rooms"] });
                       leaveMutation.mutate();
                       navigation.navigate("Home");
                     },

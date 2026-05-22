@@ -88,7 +88,11 @@ export default function RoomDetail() {
 
   const leaveMutation = useMutation({
     mutationFn: () => roomsApi.leave(id!),
-    onSuccess: () => navigate('/'),
+    onSuccess: () => {
+      queryClient.removeQueries({ queryKey: ['room', id] });
+      queryClient.invalidateQueries({ queryKey: ['rooms'] });
+      navigate('/');
+    },
   });
 
   const statusMutation = useMutation({
@@ -198,6 +202,8 @@ export default function RoomDetail() {
             <button
               onClick={() => {
                 if (confirm('방에서 나가시겠습니까?')) {
+                  queryClient.removeQueries({ queryKey: ['room', id] });
+                  queryClient.invalidateQueries({ queryKey: ['rooms'] });
                   leaveMutation.mutate();
                   navigate('/');
                 }
