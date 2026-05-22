@@ -17,7 +17,7 @@ export default function AuthScreen() {
   const handleSubmit = async () => {
     setError('');
 
-    if (!form.email || !form.password) return setError('이메일과 비밀번호를 입력해주세요.');
+    if (!form.email || !form.password) return setError('아이디와 비밀번호를 입력해주세요.');
     if (mode === 'register' && !form.nickname.trim()) return setError('닉네임을 입력해주세요.');
 
     setLoading(true);
@@ -62,11 +62,10 @@ export default function AuthScreen() {
 
         <View className="space-y-4 gap-4">
           <View>
-            <Text className="text-xs font-bold text-gray-700 mb-1.5">이메일</Text>
+            <Text className="text-xs font-bold text-gray-700 mb-1.5">아이디</Text>
             <TextInput
               value={form.email}
               onChangeText={(text) => setForm((f) => ({ ...f, email: text }))}
-              keyboardType="email-address"
               autoCapitalize="none"
               className="w-full bg-gray-100 rounded-2xl px-5 py-3.5 text-sm"
             />

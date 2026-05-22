@@ -20,7 +20,7 @@ router.post('/register', async (req, res) => {
 
     const existingEmail = await prisma.user.findUnique({ where: { email } });
     if (existingEmail) {
-      return res.status(409).json({ message: '이미 사용 중인 이메일입니다.' });
+      return res.status(409).json({ message: '이미 사용 중인 아이디입니다.' });
     }
 
     const existingNickname = await prisma.user.findUnique({ where: { nickname } });
@@ -50,12 +50,12 @@ router.post('/login', async (req, res) => {
     const { email, password } = req.body;
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
-      return res.status(401).json({ message: '이메일 또는 비밀번호가 올바르지 않습니다.' });
+      return res.status(401).json({ message: '아이디 또는 비밀번호가 올바르지 않습니다.' });
     }
 
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
-      return res.status(401).json({ message: '이메일 또는 비밀번호가 올바르지 않습니다.' });
+      return res.status(401).json({ message: '아이디 또는 비밀번호가 올바르지 않습니다.' });
     }
 
     const token = jwt.sign(
