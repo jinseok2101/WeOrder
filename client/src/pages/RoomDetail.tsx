@@ -197,7 +197,10 @@ export default function RoomDetail() {
           ) : isMember && !isHost ? (
             <button
               onClick={() => {
-                if (confirm('방에서 나가시겠습니까?')) leaveMutation.mutate();
+                if (confirm('방에서 나가시겠습니까?')) {
+                  leaveMutation.mutate();
+                  navigate('/');
+                }
               }}
               disabled={room.status !== 'OPEN'}
               className={cn(

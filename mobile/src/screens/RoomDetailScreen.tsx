@@ -246,7 +246,10 @@ export default function RoomDetailScreen() {
                   {
                     text: "나가기",
                     style: "destructive",
-                    onPress: () => leaveMutation.mutate(),
+                    onPress: () => {
+                      leaveMutation.mutate();
+                      navigation.navigate("Home");
+                    },
                   },
                 ]);
               }}
