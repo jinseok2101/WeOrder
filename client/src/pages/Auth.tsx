@@ -50,11 +50,17 @@ export default function Auth() {
     const messageListener = async (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return;
       
-      if (event.data && event.data.type === 'MOCK_GOOGLE_SUCCESS') {
-        const { token, email, name } = event.data;
+      if (
+        event.data &&
+        (event.data.type === 'MOCK_GOOGLE_SUCCESS' || event.data.type === 'REAL_GOOGLE_SUCCESS')
+      ) {
+        const { type, token, email, name } = event.data;
         setLoading(true);
         try {
-          const res = await authApi.googleLogin({ token, email, name });
+          const res =
+            type === 'REAL_GOOGLE_SUCCESS'
+              ? await authApi.googleLogin({ token })
+              : await authApi.googleLogin({ token, email, name });
           setAuth(res.user, res.token);
           navigate('/');
         } catch (err: any) {
