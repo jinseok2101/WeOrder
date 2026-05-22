@@ -1,7 +1,6 @@
 import { useState } from 'react';
 
 interface MockAccount {
-  name: string;
   email: string;
   avatar: string;
 }
@@ -26,14 +25,15 @@ export default function MockGoogleLogin() {
     }
   });
 
-  const [customForm, setCustomForm] = useState({ name: '', email: '' });
+  const [customForm, setCustomForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
 
   const handleSelectAccount = (account: MockAccount) => {
+    const derivedName = account.email.split('@')[0];
     sendBack({
       token: `mock_google_token_${Date.now()}_${account.email.replace(/[@.]/g, '')}`,
       email: account.email,
-      name: account.name
+      name: derivedName
     });
   };
 
@@ -41,25 +41,27 @@ export default function MockGoogleLogin() {
     e.preventDefault();
     setError('');
 
-    if (!customForm.name.trim() || !customForm.email.trim()) {
-      return setError('이름과 이메일을 모두 입력해주세요.');
+    if (!customForm.email.trim() || !customForm.password.trim()) {
+      return setError('이메일 주소와 비밀번호를 모두 입력해주세요.');
     }
 
     if (!customForm.email.includes('@')) {
       return setError('유효한 이메일 형식이 아닙니다.');
     }
 
+    const derivedName = customForm.email.trim().split('@')[0];
+
     sendBack({
       token: `mock_google_token_${Date.now()}_custom`,
       email: customForm.email.trim(),
-      name: customForm.name.trim()
+      name: derivedName
     });
   };
 
   const sendBack = (data: { token: string; email: string; name: string }) => {
     const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=random&size=100`;
     const updatedAccounts = [
-      { name: data.name, email: data.email, avatar },
+      { email: data.email, avatar },
       ...googleAccounts.filter((acc) => acc.email !== data.email)
     ].slice(0, 5); // keep last 5 accounts
     
@@ -115,24 +117,27 @@ export default function MockGoogleLogin() {
 
           {activeTab === 'picker' ? (
             <div className="space-y-1">
-              {googleAccounts.map((account) => (
-                <button
-                  key={account.email}
-                  type="button"
-                  onClick={() => handleSelectAccount(account)}
-                  className="w-full flex items-center px-4 py-3 hover:bg-gray-50 rounded-md transition-colors border-b border-gray-100"
-                >
-                  <img
-                    src={account.avatar}
-                    alt={account.name}
-                    className="w-8 h-8 rounded-full mr-3 object-cover"
-                  />
-                  <div className="text-left">
-                    <p className="text-sm font-semibold text-gray-800">{account.name}</p>
-                    <p className="text-xs text-gray-500">{account.email}</p>
-                  </div>
-                </button>
-              ))}
+              {googleAccounts.map((account) => {
+                const derivedName = account.email.split('@')[0];
+                return (
+                  <button
+                    key={account.email}
+                    type="button"
+                    onClick={() => handleSelectAccount(account)}
+                    className="w-full flex items-center px-4 py-3 hover:bg-gray-50 rounded-md transition-colors border-b border-gray-100"
+                  >
+                    <img
+                      src={account.avatar}
+                      alt={derivedName}
+                      className="w-8 h-8 rounded-full mr-3 object-cover"
+                    />
+                    <div className="text-left">
+                      <p className="text-sm font-semibold text-gray-800">{derivedName}</p>
+                      <p className="text-xs text-gray-500">{account.email}</p>
+                    </div>
+                  </button>
+                );
+              })}
 
               <button
                 type="button"
@@ -156,22 +161,24 @@ export default function MockGoogleLogin() {
           ) : (
             <form onSubmit={handleCustomSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">이름</label>
-                <input
-                  type="text"
-                  value={customForm.name}
-                  onChange={(e) => setCustomForm((f) => ({ ...f, name: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-                />
-              </div>
-
-              <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1">이메일 주소</label>
                 <input
                   type="text"
                   value={customForm.email}
                   onChange={(e) => setCustomForm((f) => ({ ...f, email: e.target.value }))}
                   className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                  placeholder="example@gmail.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">비밀번호</label>
+                <input
+                  type="password"
+                  value={customForm.password}
+                  onChange={(e) => setCustomForm((f) => ({ ...f, password: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                  placeholder="비밀번호 입력"
                 />
               </div>
 

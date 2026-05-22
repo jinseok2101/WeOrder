@@ -29,7 +29,7 @@ export default function AuthScreen() {
   const [googleModalVisible, setGoogleModalVisible] = useState(false);
   const [googleAccounts, setGoogleAccounts] = useState<MockAccount[]>([]);
   const [googleTab, setGoogleTab] = useState<'picker' | 'custom'>('custom');
-  const [googleCustomForm, setGoogleCustomForm] = useState({ name: '', email: '' });
+  const [googleCustomForm, setGoogleCustomForm] = useState({ email: '', password: '' });
   const [googleError, setGoogleError] = useState('');
   const [googleLoading, setGoogleLoading] = useState(false);
 
@@ -76,7 +76,7 @@ export default function AuthScreen() {
 
       setAuth(res.user, res.token);
       setGoogleModalVisible(false);
-      setGoogleCustomForm({ name: '', email: '' });
+      setGoogleCustomForm({ email: '', password: '' });
       setGoogleTab('picker');
     } catch (err: any) {
       const msg =
@@ -90,13 +90,14 @@ export default function AuthScreen() {
 
   const handleGoogleCustomSubmit = () => {
     setGoogleError('');
-    if (!googleCustomForm.name.trim() || !googleCustomForm.email.trim()) {
-      return setGoogleError('이름과 이메일을 모두 입력해주세요.');
+    if (!googleCustomForm.email.trim() || !googleCustomForm.password.trim()) {
+      return setGoogleError('이메일 주소와 비밀번호를 모두 입력해주세요.');
     }
     if (!googleCustomForm.email.includes('@')) {
       return setGoogleError('유효한 이메일 형식이 아닙니다.');
     }
-    handleGoogleLogin(googleCustomForm.email.trim(), googleCustomForm.name.trim());
+    const derivedName = googleCustomForm.email.trim().split('@')[0];
+    handleGoogleLogin(googleCustomForm.email.trim(), derivedName);
   };
 
   const handleSubmit = async () => {
@@ -566,18 +567,6 @@ export default function AuthScreen() {
               ) : (
                 <View className="gap-4">
                   <View>
-                    <Text className="text-xs font-bold text-gray-700 mb-1.5">이름</Text>
-                    <TextInput
-                      value={googleCustomForm.name}
-                      onChangeText={(text) => setGoogleCustomForm((f) => ({ ...f, name: text }))}
-                      className="w-full bg-gray-100 rounded-2xl px-5 py-3.5 text-sm text-gray-900"
-                      autoCapitalize="none"
-                      placeholder="이름 입력"
-                      placeholderTextColor="#9ca3af"
-                    />
-                  </View>
-
-                  <View>
                     <Text className="text-xs font-bold text-gray-700 mb-1.5">이메일 주소</Text>
                     <TextInput
                       value={googleCustomForm.email}
@@ -586,6 +575,19 @@ export default function AuthScreen() {
                       autoCapitalize="none"
                       keyboardType="email-address"
                       placeholder="example@gmail.com"
+                      placeholderTextColor="#9ca3af"
+                    />
+                  </View>
+
+                  <View>
+                    <Text className="text-xs font-bold text-gray-700 mb-1.5">비밀번호</Text>
+                    <TextInput
+                      value={googleCustomForm.password}
+                      onChangeText={(text) => setGoogleCustomForm((f) => ({ ...f, password: text }))}
+                      className="w-full bg-gray-100 rounded-2xl px-5 py-3.5 text-sm text-gray-900"
+                      autoCapitalize="none"
+                      secureTextEntry={true}
+                      placeholder="비밀번호 입력"
                       placeholderTextColor="#9ca3af"
                     />
                   </View>
