@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import { Eye, EyeOff } from 'lucide-react-native';
 import Svg, { Path } from 'react-native-svg';
 import { authApi } from '../api/auth';
@@ -43,10 +43,20 @@ export default function AuthScreen() {
   };
 
   return (
-    <View className="flex-1 bg-gray-100 items-center justify-center p-4">
+    <View className="flex-1 bg-orange-50 items-center justify-center p-4">
+      <View className="w-full max-w-sm items-center mb-6">
+        <Image 
+          source={require('../../assets/icon.png')} 
+          className="w-16 h-16 rounded-[20px] mb-3 shadow-lg"
+          resizeMode="cover"
+        />
+        <Text className="text-2xl font-extrabold text-gray-900 tracking-tight">WeOrder</Text>
+        <Text className="text-xs text-gray-500 font-medium mt-1">같이 시키면 더 맛있어요</Text>
+      </View>
+
       <View className="w-full max-w-sm bg-white rounded-[32px] p-8 shadow-xl">
         <View className="items-center mb-6">
-          <Text className="text-2xl font-extrabold text-gray-900">
+          <Text className="text-xl font-bold text-gray-900">
             {mode === 'login' ? '로그인' : '회원가입'}
           </Text>
         </View>

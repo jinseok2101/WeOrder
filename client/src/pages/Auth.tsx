@@ -52,12 +52,22 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-orange-100 flex flex-col items-center justify-center p-4">
+      <div className="w-full max-w-sm text-center mb-6">
+        <img 
+          src="/icons/icon-512.png" 
+          alt="WeOrder Logo" 
+          className="w-16 h-16 rounded-[20px] mx-auto mb-3 shadow-lg shadow-orange-100" 
+        />
+        <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">WeOrder</h1>
+        <p className="text-xs text-gray-500 font-medium mt-1">같이 시키면 더 맛있어요</p>
+      </div>
+
       <div className="w-full max-w-sm bg-white rounded-[32px] shadow-xl p-8">
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-extrabold text-gray-900">
+          <h2 className="text-xl font-extrabold text-gray-900">
             {mode === 'login' ? '로그인' : '회원가입'}
-          </h1>
+          </h2>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
