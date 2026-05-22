@@ -3,8 +3,13 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../prisma';
 import { authenticate, AuthRequest } from '../middleware/auth';
+import { getVapidPublicKey } from '../services/notificationService';
 
 const router = Router();
+
+router.get('/vapid-key', (req, res) => {
+  res.json({ publicKey: getVapidPublicKey() });
+});
 
 router.post('/register', async (req, res) => {
   try {
@@ -137,6 +142,10 @@ router.patch('/me/notifications', authenticate, async (req: AuthRequest, res) =>
 router.post('/me/push-subscription', authenticate, async (req: AuthRequest, res) => {
   try {
     const { type, endpoint, p256dh, auth } = req.body;
+    if (!req.userId) {
+      return res.status(401).json({ message: '인증 정보가 누락되었습니다.' });
+    }
+
     if (!type || !endpoint) {
       return res.status(400).json({ message: '필수 구독 정보가 누락되었습니다.' });
     }

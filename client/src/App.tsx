@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import { connectSocket } from './socket/socket';
 import { authApi } from './api/auth';
+import { registerPushNotifications } from './lib/push';
 import Auth from './pages/Auth';
 import Home from './pages/Home';
 import CreateRoom from './pages/CreateRoom';
@@ -23,7 +24,11 @@ export default function App() {
       
       // 앱 실행 시 최신 프로필 정보(계좌 등) 동기화
       authApi.me()
-        .then((user) => setUser(user))
+        .then((user) => {
+          setUser(user);
+          // 알림 권한 획득 및 PWA 푸시 구독 시도
+          registerPushNotifications();
+        })
         .catch((err) => console.warn('프로필 동기화 실패:', err));
     }
   }, []);

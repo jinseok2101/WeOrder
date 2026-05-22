@@ -29,4 +29,6 @@ export const authApi = {
     api.post('/auth/me/push-subscription', data).then((r) => r.data),
   unsubscribePush: (data: { endpoint: string }) =>
     api.delete('/auth/me/push-subscription', { data }).then((r) => r.data),
+  getVapidKey: () =>
+    api.get<{ publicKey: string }>('/auth/vapid-key').then((r) => r.data),
 };

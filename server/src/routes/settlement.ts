@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { prisma } from '../prisma';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { getIo } from '../io';
+import { notificationService } from '../services/notificationService';
 
 const router = Router();
 
@@ -39,6 +40,28 @@ router.patch('/:id/shares/:userId/paid', authenticate, async (req: AuthRequest, 
     const io = getIo();
     io.to(settlement!.roomId).emit('settlement:updated', settlement);
 
+    // 방장에게 송금 완료 푸시 알림 발송 (비동기 수행)
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { nickname: true }
+    });
+    const room = await prisma.room.findUnique({
+      where: { id: settlement!.roomId },
+      select: { hostId: true, restaurantName: true }
+    });
+
+    if (room) {
+      notificationService.sendPushNotification(
+        [room.hostId],
+        {
+          title: `💸 입금 완료 알림`,
+          body: `${user?.nickname || '파티원'}님이 '${room.restaurantName}' 배달비 송금을 완료하셨습니다.`,
+          data: { roomId: settlement!.roomId, type: 'settlement' }
+        },
+        'settlement'
+      );
+    }
+
     res.json(settlement);
   } catch {
     res.status(500).json({ message: '서버 오류가 발생했습니다.' });
@@ -74,6 +97,30 @@ router.patch('/:id/shares/:userId/confirm', authenticate, async (req: AuthReques
     const updated = await getFullSettlement(id);
     const io = getIo();
     io.to(settlement.roomId).emit('settlement:updated', updated);
+
+    // 입금 확인 완료 알림 발송 (송금한 멤버에게)
+    notificationService.sendPushNotification(
+      [userId],
+      {
+        title: `✅ WeOrder 입금 확인 완료`,
+        body: `'${settlement.room.restaurantName}' 방장님이 송금 입금을 확인했습니다!`,
+        data: { roomId: settlement.roomId, type: 'settlement' }
+      },
+      'settlement'
+    );
+
+    // 전체 정산 완료 시 방장에게 알림 발송
+    if (allConfirmed) {
+      notificationService.sendPushNotification(
+        [settlement.room.hostId],
+        {
+          title: `🎉 정산 최종 완료!`,
+          body: `'${settlement.room.restaurantName}' 방의 모든 멤버가 송금을 완료하여 정산이 성공적으로 끝났습니다!`,
+          data: { roomId: settlement.roomId, type: 'settlement' }
+        },
+        'settlement'
+      );
+    }
 
     res.json(updated);
   } catch {

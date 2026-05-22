@@ -48,3 +48,61 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
+// 1. push 이벤트 리스너 추가
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+
+  try {
+    const payload = event.data.json();
+    const title = payload.title || 'WeOrder';
+    const options = {
+      body: payload.body || '',
+      icon: payload.icon || '/icons/icon-192.png',
+      badge: payload.badge || '/favicon.svg',
+      data: payload.data || {},
+      vibrate: [100, 50, 100],
+    };
+
+    event.waitUntil(self.registration.showNotification(title, options));
+  } catch (err) {
+    console.error('Failed to parse push data:', err);
+    // 폴백 일반 텍스트 알림
+    event.waitUntil(
+      self.registration.showNotification('WeOrder 알림', {
+        body: event.data.text(),
+        icon: '/icons/icon-192.png',
+        badge: '/favicon.svg',
+      })
+    );
+  }
+});
+
+// 2. 알림 클릭 이벤트 리스너 추가
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  const data = event.notification.data || {};
+  const roomId = data.roomId;
+  // 클릭 시 알림 성격에 따라 해당 방이나 기본 경로로 리디렉션
+  const urlToOpen = roomId ? `/rooms/${roomId}` : '/';
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      // 이미 열려 있는 앱 탭이 있으면 활성화 후 이동
+      for (const client of windowClients) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          return client.focus().then((focusedClient) => {
+            if ('navigate' in focusedClient) {
+              return focusedClient.navigate(urlToOpen);
+            }
+          });
+        }
+      }
+      // 열린 탭이 없으면 새 창으로 띄움
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(urlToOpen);
+      }
+    })
+  );
+});

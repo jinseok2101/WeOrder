@@ -4,6 +4,7 @@ import { authenticate, AuthRequest } from '../middleware/auth';
 import { getIo } from '../io';
 import { haversineDistance, calcOrderTotals } from '../services/roomService';
 import { createSettlement } from '../services/settlementService';
+import { notificationService } from '../services/notificationService';
 
 const router = Router();
 
@@ -287,6 +288,19 @@ router.post('/:id/join', authenticate, async (req: AuthRequest, res) => {
       createdAt: sysMsg.createdAt.toISOString(),
     });
 
+    // 방장에게 실시간 푸시 알림 발송 (자신이 참여한 것은 제외)
+    if (room.hostId !== userId) {
+      notificationService.sendPushNotification(
+        [room.hostId],
+        {
+          title: `🎉 WeOrder 배달방 새 멤버`,
+          body: `${user?.nickname || '새 참가자'}님이 '${room.restaurantName}' 방에 참가하셨습니다!`,
+          data: { roomId: id, type: 'roomStatus' }
+        },
+        'roomStatus'
+      );
+    }
+
     res.json({ message: '방에 참여했습니다.' });
   } catch {
     res.status(500).json({ message: '서버 오류가 발생했습니다.' });
@@ -386,6 +400,38 @@ router.patch('/:id/status', authenticate, async (req: AuthRequest, res) => {
 
     const io = getIo();
     io.to(id).emit('room:updated', updated);
+
+    // 참가자들에게 방 상태 변경 푸시 알림 발송 (자신이 변경한 것은 제외)
+    const members = await prisma.roomMember.findMany({
+      where: { roomId: id, userId: { not: req.userId } },
+      select: { userId: true }
+    });
+    const memberIds = members.map((m) => m.userId);
+
+    if (memberIds.length > 0) {
+      let title = `🍔 WeOrder 배달방 알림`;
+      let body = '';
+
+      if (status === 'ORDERING') {
+        body = `'${updated.restaurantName}' 배달 주문이 마감 및 시작되었습니다!`;
+      } else if (status === 'ORDERED') {
+        body = `'${updated.restaurantName}' 방장님이 주문 접수를 마쳤습니다.`;
+      } else if (status === 'CANCELLED') {
+        body = `'${updated.restaurantName}' 방이 방장에 의해 취소되었습니다.`;
+      }
+
+      if (body) {
+        notificationService.sendPushNotification(
+          memberIds,
+          {
+            title,
+            body,
+            data: { roomId: id, type: 'roomStatus' }
+          },
+          'roomStatus'
+        );
+      }
+    }
 
     if (status === 'CANCELLED') {
       const sysMsg = await prisma.chatMessage.create({
@@ -487,6 +533,29 @@ router.post('/:roomId/settlement', authenticate, async (req: AuthRequest, res) =
 
     const io = getIo();
     io.to(roomId).emit('settlement:created', settlement);
+
+    // 다른 멤버들에게 정산 시작 푸시 알림 발송 (비동기 수행)
+    const room = await prisma.room.findUnique({
+      where: { id: roomId },
+      select: { restaurantName: true }
+    });
+    const members = await prisma.roomMember.findMany({
+      where: { roomId, userId: { not: req.userId } },
+      select: { userId: true }
+    });
+    const memberIds = members.map((m) => m.userId);
+
+    if (memberIds.length > 0) {
+      notificationService.sendPushNotification(
+        memberIds,
+        {
+          title: `💰 WeOrder 배달 정산 요청`,
+          body: `'${room?.restaurantName || 'WeOrder'}' 방의 배달비 정산이 시작되었습니다! 내역을 확인해 주세요.`,
+          data: { roomId, type: 'settlement' }
+        },
+        'settlement'
+      );
+    }
 
     res.status(201).json(settlement);
   } catch (err: unknown) {

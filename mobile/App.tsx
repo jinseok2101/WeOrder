@@ -11,6 +11,7 @@ import { registerRootComponent } from 'expo';
 import { useAuthStore } from './src/store/authStore';
 import { connectSocket } from './src/socket/socket';
 import { authApi } from './src/api/auth';
+import { registerForPushNotificationsAsync } from './src/lib/push';
 
 import AuthScreen from './src/screens/AuthScreen';
 import HomeScreen from './src/screens/HomeScreen';
@@ -50,7 +51,11 @@ export default function App() {
       
       // 앱 구동 시 최신 프로필 정보(정산/계좌 정보 등)를 서버로부터 동기화
       authApi.me()
-        .then((user) => setUser(user))
+        .then((user) => {
+          setUser(user);
+          // 알림 수신 동의 및 푸시 토큰 등록 시도
+          registerForPushNotificationsAsync();
+        })
         .catch((err) => console.warn('프로필 동기화 실패:', err));
     }
   }, []);

@@ -1,6 +1,7 @@
 import { Server, Socket } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../prisma';
+import { notificationService } from '../services/notificationService';
 
 export function setupSocket(io: Server): void {
   io.use((socket, next) => {
@@ -57,6 +58,27 @@ export function setupSocket(io: Server): void {
           user: message.user,
           createdAt: message.createdAt.toISOString(),
         });
+
+        // 상대방 참가자들에게 푸시 알림 발송 (비동기 수행)
+        const otherMembers = await prisma.roomMember.findMany({
+          where: {
+            roomId,
+            userId: { not: userId }
+          },
+          select: { userId: true }
+        });
+        const otherUserIds = otherMembers.map((m) => m.userId);
+        if (otherUserIds.length > 0) {
+          notificationService.sendPushNotification(
+            otherUserIds,
+            {
+              title: `💬 ${message.user?.nickname || 'WeOrder'}`,
+              body: message.content,
+              data: { roomId, type: 'chat' }
+            },
+            'chat'
+          );
+        }
       } catch {
         socket.emit('error', { message: '메시지 전송에 실패했습니다.' });
       }

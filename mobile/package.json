@@ -19,6 +19,7 @@
     "expo-clipboard": "~8.0.8",
     "expo-dev-client": "~6.0.21",
     "expo-location": "~19.0.8",
+    "expo-notifications": "^0.32.17",
     "expo-status-bar": "~3.0.9",
     "lucide-react-native": "^1.11.0",
     "nativewind": "^4.2.3",
