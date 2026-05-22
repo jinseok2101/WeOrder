@@ -31,4 +31,8 @@ export const authApi = {
     api.delete('/auth/me/push-subscription', { data }).then((r) => r.data),
   getVapidKey: () =>
     api.get<{ publicKey: string }>('/auth/vapid-key').then((r) => r.data),
+  findId: (nickname: string) =>
+    api.post<{ email: string }>('/auth/find-id', { nickname }).then((r) => r.data),
+  resetPassword: (data: { email: string; nickname: string; newPassword: string }) =>
+    api.post<{ message: string }>('/auth/reset-password', data).then((r) => r.data),
 };

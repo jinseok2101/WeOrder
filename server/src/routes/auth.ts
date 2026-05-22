@@ -194,4 +194,48 @@ router.delete('/me/push-subscription', authenticate, async (req: AuthRequest, re
   }
 });
 
+// 아이디 찾기
+router.post('/find-id', async (req, res) => {
+  try {
+    const { nickname } = req.body;
+    if (!nickname) {
+      return res.status(400).json({ message: '닉네임을 입력해주세요.' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { nickname } });
+    if (!user) {
+      return res.status(404).json({ message: '해당 닉네임으로 등록된 회원을 찾을 수 없습니다.' });
+    }
+
+    res.json({ email: user.email });
+  } catch (err) {
+    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+  }
+});
+
+// 비밀번호 재설정
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { email, nickname, newPassword } = req.body;
+    if (!email || !nickname || !newPassword) {
+      return res.status(400).json({ message: '모든 필드를 입력해주세요.' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user || user.nickname !== nickname) {
+      return res.status(400).json({ message: '아이디와 닉네임 정보가 일치하지 않습니다.' });
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash },
+    });
+
+    res.json({ message: '비밀번호가 성공적으로 재설정되었습니다.' });
+  } catch (err) {
+    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+  }
+});
+
 export default router;
