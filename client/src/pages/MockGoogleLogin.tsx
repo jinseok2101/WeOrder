@@ -82,7 +82,6 @@ export default function MockGoogleLogin() {
       isMounted = false;
     };
   }, [clientId]);
-
   const handleSaveClientId = () => {
     const trimmed = clientIdInput.trim();
     if (!trimmed) {
@@ -91,6 +90,17 @@ export default function MockGoogleLogin() {
     localStorage.setItem('weorder_google_client_id', trimmed);
     setClientId(trimmed);
     setError('');
+
+    if (window.opener) {
+      window.opener.postMessage(
+        {
+          type: 'GOOGLE_CLIENT_ID_UPDATED',
+          clientId: trimmed
+        },
+        window.location.origin
+      );
+      window.close();
+    }
   };
 
   return (
