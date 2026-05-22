@@ -43,7 +43,7 @@ export default function AuthScreen() {
   };
 
   return (
-    <View className="flex-1 bg-orange-50 items-center justify-center p-4">
+    <View className="flex-1 bg-gray-100 items-center justify-center p-4">
       <View className="w-full max-w-sm items-center mb-6">
         <Image 
           source={require('../../assets/icon.png')} 
@@ -51,7 +51,6 @@ export default function AuthScreen() {
           resizeMode="cover"
         />
         <Text className="text-2xl font-extrabold text-gray-900 tracking-tight">WeOrder</Text>
-        <Text className="text-xs text-gray-500 font-medium mt-1">같이 시키면 더 맛있어요</Text>
       </View>
 
       <View className="w-full max-w-sm bg-white rounded-[32px] p-8 shadow-xl">
