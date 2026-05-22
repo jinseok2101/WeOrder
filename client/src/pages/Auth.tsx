@@ -33,6 +33,43 @@ export default function Auth() {
     setIsCapsLockOn(e.getModifierState('CapsLock'));
   };
 
+  const handleGoogleLogin = () => {
+    setError('');
+    
+    const width = 500;
+    const height = 600;
+    const left = window.screen.width / 2 - width / 2;
+    const top = window.screen.height / 2 - height / 2;
+    
+    const popup = window.open(
+      '/mock-google-login',
+      'Google Login',
+      `width=${width},height=${height},left=${left},top=${top}`
+    );
+    
+    const messageListener = async (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      
+      if (event.data && event.data.type === 'MOCK_GOOGLE_SUCCESS') {
+        const { token, email, name } = event.data;
+        setLoading(true);
+        try {
+          const res = await authApi.googleLogin({ token, email, name });
+          setAuth(res.user, res.token);
+          navigate('/');
+        } catch (err: any) {
+          const msg = err?.response?.data?.message || '구글 로그인 중 오류가 발생했습니다.';
+          setError(msg);
+        } finally {
+          setLoading(false);
+        }
+        window.removeEventListener('message', messageListener);
+      }
+    };
+    
+    window.addEventListener('message', messageListener);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -223,7 +260,7 @@ export default function Auth() {
               
               <button
                 type="button"
-                onClick={() => alert('Google 로그인은 준비 중입니다.')}
+                onClick={handleGoogleLogin}
                 className="flex-1 flex items-center justify-center space-x-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-2xl py-3 text-xs font-bold transition-colors"
               >
                 <svg viewBox="0 0 24 24" width="14" height="14" xmlns="http://www.w3.org/2000/svg">

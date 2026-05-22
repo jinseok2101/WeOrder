@@ -35,4 +35,7 @@ export const authApi = {
     api.post<{ email: string }>('/auth/find-id', { nickname }).then((r) => r.data),
   resetPassword: (data: { email: string; nickname: string; newPassword: string }) =>
     api.post<{ message: string }>('/auth/reset-password', data).then((r) => r.data),
+  googleLogin: (data: { token: string; email?: string; name?: string }) =>
+    api.post<AuthResponse>('/auth/google', data).then((r) => r.data),
 };
+
