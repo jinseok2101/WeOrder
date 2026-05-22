@@ -3,6 +3,7 @@ import { Bell, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { authApi } from '../../api/auth';
 import { useMutation } from '@tanstack/react-query';
+import { registerPushNotifications } from '../../lib/push';
 
 export default function NotificationSettings() {
   const { user, setUser } = useAuthStore();
@@ -23,6 +24,17 @@ export default function NotificationSettings() {
       setTimeout(() => setSuccessMsg(''), 3000);
     },
   });
+
+  const [permission, setPermission] = useState(() => 
+    'Notification' in window ? Notification.permission : 'denied'
+  );
+
+  const handleRequestDevicePermission = async () => {
+    if ('Notification' in window) {
+      await registerPushNotifications();
+      setPermission(Notification.permission);
+    }
+  };
 
   const handleToggle = (key: keyof typeof settings) => {
     const nextValue = !settings[key];
@@ -47,6 +59,22 @@ export default function NotificationSettings() {
 
       {isOpen && (
         <div className="p-4 border-t border-gray-100 space-y-4">
+          {permission !== 'granted' && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 flex items-center justify-between">
+              <div>
+                <span className="text-sm font-bold text-amber-800 block">기기 알림이 꺼져있습니다</span>
+                <span className="text-xs text-amber-600">푸시 알림을 받으려면 기기 알림을 허용해주세요.</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleRequestDevicePermission}
+                className="bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap ml-2"
+              >
+                권한 허용
+              </button>
+            </div>
+          )}
+
           {/* 채팅 알림 */}
           <div className="flex items-center justify-between py-1">
             <div>

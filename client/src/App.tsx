@@ -27,7 +27,9 @@ export default function App() {
         .then((user) => {
           setUser(user);
           // 알림 권한 획득 및 PWA 푸시 구독 시도
-          registerPushNotifications();
+          if ('Notification' in window && Notification.permission === 'granted') {
+            registerPushNotifications();
+          }
         })
         .catch((err) => console.warn('프로필 동기화 실패:', err));
     }
