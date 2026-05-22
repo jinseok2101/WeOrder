@@ -34,7 +34,9 @@ export async function registerForPushNotificationsAsync() {
     }
 
     // 2. Expo 푸시 토큰 가져오기 (Expo EAS 프로젝트가 연결되어 있으면 자동으로 토큰 발급)
-    const tokenData = await Notifications.getExpoPushTokenAsync();
+    const tokenData = await Notifications.getExpoPushTokenAsync({
+      projectId: '7f1d5e48-618f-400f-ad66-40e68bf810f8'
+    });
     token = tokenData.data;
     console.log('🔔 Expo Push Token:', token);
 
