@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Utensils, Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { authApi } from '../api/auth';
 import { useAuthStore } from '../store/authStore';
 import { cn } from '../lib/utils';
@@ -55,9 +55,11 @@ export default function Auth() {
     <div className="min-h-screen bg-gradient-to-br from-primary-50 to-orange-100 flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-primary-500 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-primary-200">
-            <Utensils size={30} className="text-white" />
-          </div>
+          <img 
+            src="/icons/icon-512.png" 
+            alt="WeOrder Logo" 
+            className="w-16 h-16 rounded-2xl mx-auto mb-3 shadow-lg shadow-primary-200" 
+          />
           <h1 className="text-2xl font-extrabold text-gray-900">WeOrder</h1>
           <p className="text-sm text-gray-500 mt-1">같이 시키면 더 맛있어요</p>
         </div>

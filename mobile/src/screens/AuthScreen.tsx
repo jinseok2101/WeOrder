@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { Utensils, Eye, EyeOff } from 'lucide-react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
+import { Eye, EyeOff } from 'lucide-react-native';
 import { authApi } from '../api/auth';
 import { useAuthStore } from '../store/authStore';
 
@@ -45,9 +45,11 @@ export default function AuthScreen() {
     <View className="flex-1 bg-orange-50 items-center justify-center p-4">
       <View className="w-full max-w-sm">
         <View className="items-center mb-8">
-          <View className="w-16 h-16 bg-primary-500 rounded-2xl items-center justify-center mb-3">
-            <Utensils size={30} color="white" />
-          </View>
+          <Image 
+            source={require('../../assets/icon.png')} 
+            className="w-16 h-16 rounded-2xl mb-3"
+            resizeMode="cover"
+          />
           <Text className="text-2xl font-extrabold text-gray-900">WeOrder</Text>
           <Text className="text-sm text-gray-500 mt-1">같이 시키면 더 맛있어요</Text>
         </View>
