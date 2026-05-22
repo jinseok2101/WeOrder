@@ -6,14 +6,26 @@ interface MockAccount {
   avatar: string;
 }
 
-const mockAccounts: MockAccount[] = [
-  { name: '김도윤', email: 'doyun.kim@gmail.com', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100' },
-  { name: '이지아', email: 'jia.lee@gmail.com', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=100' },
-  { name: '박서준', email: 'seojun.park@gmail.com', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=100' }
-];
-
 export default function MockGoogleLogin() {
-  const [activeTab, setActiveTab] = useState<'picker' | 'custom'>('picker');
+  const [googleAccounts, setGoogleAccounts] = useState<MockAccount[]>(() => {
+    try {
+      const stored = localStorage.getItem('weorder_google_accounts');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [activeTab, setActiveTab] = useState<'picker' | 'custom'>(() => {
+    try {
+      const stored = localStorage.getItem('weorder_google_accounts');
+      const parsed = stored ? JSON.parse(stored) : [];
+      return parsed.length > 0 ? 'picker' : 'custom';
+    } catch {
+      return 'custom';
+    }
+  });
+
   const [customForm, setCustomForm] = useState({ name: '', email: '' });
   const [error, setError] = useState('');
 
@@ -45,6 +57,18 @@ export default function MockGoogleLogin() {
   };
 
   const sendBack = (data: { token: string; email: string; name: string }) => {
+    const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=random&size=100`;
+    const updatedAccounts = [
+      { name: data.name, email: data.email, avatar },
+      ...googleAccounts.filter((acc) => acc.email !== data.email)
+    ].slice(0, 5); // keep last 5 accounts
+    
+    try {
+      localStorage.setItem('weorder_google_accounts', JSON.stringify(updatedAccounts));
+    } catch (e) {
+      console.error(e);
+    }
+
     if (window.opener) {
       window.opener.postMessage(
         {
@@ -91,7 +115,7 @@ export default function MockGoogleLogin() {
 
           {activeTab === 'picker' ? (
             <div className="space-y-1">
-              {mockAccounts.map((account) => (
+              {googleAccounts.map((account) => (
                 <button
                   key={account.email}
                   type="button"
@@ -151,17 +175,19 @@ export default function MockGoogleLogin() {
                 />
               </div>
 
-              <div className="flex justify-between items-center pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveTab('picker');
-                    setError('');
-                  }}
-                  className="text-xs text-blue-600 font-semibold hover:underline"
-                >
-                  계정 선택으로 돌아가기
-                </button>
+              <div className={`flex ${googleAccounts.length > 0 ? 'justify-between' : 'justify-end'} items-center pt-2`}>
+                {googleAccounts.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveTab('picker');
+                      setError('');
+                    }}
+                    className="text-xs text-blue-600 font-semibold hover:underline"
+                  >
+                    계정 선택으로 돌아가기
+                  </button>
+                )}
                 
                 <button
                   type="submit"
@@ -172,6 +198,7 @@ export default function MockGoogleLogin() {
               </div>
             </form>
           )}
+
         </div>
 
         {/* Footer */}

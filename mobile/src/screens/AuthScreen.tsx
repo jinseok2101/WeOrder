@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Image, Alert, Modal } from 'react-native';
 import { Eye, EyeOff } from 'lucide-react-native';
 import Svg, { Path } from 'react-native-svg';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authApi } from '../api/auth';
 import { useAuthStore } from '../store/authStore';
 
@@ -10,12 +11,6 @@ interface MockAccount {
   email: string;
   avatar: string;
 }
-
-const mockAccounts: MockAccount[] = [
-  { name: '김도윤', email: 'doyun.kim@gmail.com', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100' },
-  { name: '이지아', email: 'jia.lee@gmail.com', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=100' },
-  { name: '박서준', email: 'seojun.park@gmail.com', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=100' }
-];
 
 export default function AuthScreen() {
   const setAuth = useAuthStore((s) => s.setAuth);
@@ -32,10 +27,35 @@ export default function AuthScreen() {
   const [error, setError] = useState('');
 
   const [googleModalVisible, setGoogleModalVisible] = useState(false);
-  const [googleTab, setGoogleTab] = useState<'picker' | 'custom'>('picker');
+  const [googleAccounts, setGoogleAccounts] = useState<MockAccount[]>([]);
+  const [googleTab, setGoogleTab] = useState<'picker' | 'custom'>('custom');
   const [googleCustomForm, setGoogleCustomForm] = useState({ name: '', email: '' });
   const [googleError, setGoogleError] = useState('');
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  useEffect(() => {
+    const loadGoogleAccounts = async () => {
+      try {
+        const stored = await AsyncStorage.getItem('weorder_google_accounts');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          setGoogleAccounts(parsed);
+          if (parsed.length > 0) {
+            setGoogleTab('picker');
+          } else {
+            setGoogleTab('custom');
+          }
+        } else {
+          setGoogleAccounts([]);
+          setGoogleTab('custom');
+        }
+      } catch (e) {
+        setGoogleAccounts([]);
+        setGoogleTab('custom');
+      }
+    };
+    loadGoogleAccounts();
+  }, []);
 
   const handleGoogleLogin = async (email: string, name: string) => {
     setGoogleError('');
@@ -43,9 +63,19 @@ export default function AuthScreen() {
     try {
       const token = `mock_google_token_${Date.now()}_${email.replace(/[@.]/g, '')}`;
       const res = await authApi.googleLogin({ token, email, name });
+      
+      // Save account to AsyncStorage
+      const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&size=100`;
+      const updatedAccounts = [
+        { name, email, avatar },
+        ...googleAccounts.filter((acc) => acc.email !== email)
+      ].slice(0, 5);
+      
+      await AsyncStorage.setItem('weorder_google_accounts', JSON.stringify(updatedAccounts));
+      setGoogleAccounts(updatedAccounts);
+
       setAuth(res.user, res.token);
       setGoogleModalVisible(false);
-      // reset state
       setGoogleCustomForm({ name: '', email: '' });
       setGoogleTab('picker');
     } catch (err: any) {
@@ -498,7 +528,7 @@ export default function AuthScreen() {
                 </View>
               ) : googleTab === 'picker' ? (
                 <View className="gap-2">
-                  {mockAccounts.map((account) => (
+                  {googleAccounts.map((account) => (
                     <TouchableOpacity
                       key={account.email}
                       onPress={() => handleGoogleLogin(account.email, account.name)}
@@ -560,15 +590,17 @@ export default function AuthScreen() {
                     />
                   </View>
 
-                  <View className="flex-row justify-between items-center mt-2">
-                    <TouchableOpacity
-                      onPress={() => {
-                        setGoogleTab('picker');
-                        setGoogleError('');
-                      }}
-                    >
-                      <Text className="text-xs text-blue-600 font-bold">계정 선택으로 이동</Text>
-                    </TouchableOpacity>
+                  <View className={`flex-row ${googleAccounts.length > 0 ? 'justify-between' : 'justify-end'} items-center mt-2`}>
+                    {googleAccounts.length > 0 && (
+                      <TouchableOpacity
+                        onPress={() => {
+                          setGoogleTab('picker');
+                          setGoogleError('');
+                        }}
+                      >
+                        <Text className="text-xs text-blue-600 font-bold">계정 선택으로 이동</Text>
+                      </TouchableOpacity>
+                    )}
 
                     <TouchableOpacity
                       onPress={handleGoogleCustomSubmit}
@@ -579,6 +611,7 @@ export default function AuthScreen() {
                   </View>
                 </View>
               )}
+
             </View>
 
             {/* Cancel/Close Footer */}
