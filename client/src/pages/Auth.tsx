@@ -27,6 +27,10 @@ export default function Auth() {
   const [clientId, setClientId] = useState(() => {
     return (import.meta.env.VITE_GOOGLE_CLIENT_ID as string) || localStorage.getItem('weorder_google_client_id') || '';
   });
+  
+  const [kakaoKey, setKakaoKey] = useState(() => {
+    return (import.meta.env.VITE_KAKAO_JS_KEY as string) || localStorage.getItem('weorder_kakao_js_key') || '';
+  });
 
   // Dynamic GSI Loader & Render Hook on the main page
   useEffect(() => {
@@ -128,6 +132,77 @@ export default function Auth() {
     };
   }, [clientId]);
 
+  // Dynamic Kakao SDK Loader & Init Hook
+  useEffect(() => {
+    let isMounted = true;
+
+    // Listen for postMessage events for Kakao
+    const messageListener = async (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+
+      if (event.data && event.data.type === 'KAKAO_JS_KEY_UPDATED') {
+        const { kakaoKey: newKey } = event.data;
+        if (isMounted) {
+          setKakaoKey(newKey);
+        }
+      } else if (
+        event.data &&
+        (event.data.type === 'MOCK_KAKAO_SUCCESS' || event.data.type === 'REAL_KAKAO_SUCCESS')
+      ) {
+        const { type, token, email, nickname } = event.data;
+        setLoading(true);
+        try {
+          const res =
+            type === 'REAL_KAKAO_SUCCESS'
+              ? await authApi.kakaoLogin({ token })
+              : await authApi.kakaoLogin({ token, email, nickname });
+          setAuth(res.user, res.token);
+          navigate('/');
+        } catch (err: any) {
+          const msg = err?.response?.data?.message || '카카오 로그인 중 오류가 발생했습니다.';
+          setError(msg);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    window.addEventListener('message', messageListener);
+
+    if (!kakaoKey) {
+      return () => {
+        isMounted = false;
+        window.removeEventListener('message', messageListener);
+      };
+    }
+
+    const initKakao = () => {
+      if (!window.Kakao) return;
+      try {
+        if (!window.Kakao.isInitialized()) {
+          window.Kakao.init(kakaoKey);
+        }
+      } catch (err) {
+        console.error('Kakao Init Auth Page Error:', err);
+      }
+    };
+
+    if (window.Kakao) {
+      initKakao();
+    } else {
+      const script = document.createElement('script');
+      script.src = 'https://developers.kakao.com/sdk/js/kakao.min.js';
+      script.async = true;
+      script.onload = initKakao;
+      document.head.appendChild(script);
+    }
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener('message', messageListener);
+    };
+  }, [kakaoKey]);
+
   if (isAuthenticated) {
     navigate('/');
     return null;
@@ -150,6 +225,53 @@ export default function Auth() {
       'Google Login',
       `width=${width},height=${height},left=${left},top=${top}`
     );
+  };
+
+  const handleKakaoLogin = () => {
+    setError('');
+
+    if (!kakaoKey) {
+      const width = 500;
+      const height = 600;
+      const left = window.screen.width / 2 - width / 2;
+      const top = window.screen.height / 2 - height / 2;
+      
+      window.open(
+        '/mock-kakao-login',
+        'Kakao Login Configuration',
+        `width=${width},height=${height},left=${left},top=${top}`
+      );
+      return;
+    }
+
+    if (!window.Kakao) {
+      return setError('카카오 SDK가 준비 중입니다. 잠시 후 다시 시도해 주세요.');
+    }
+
+    try {
+      window.Kakao.Auth.login({
+        success: async (authObj: any) => {
+          setLoading(true);
+          try {
+            const res = await authApi.kakaoLogin({ token: authObj.access_token });
+            setAuth(res.user, res.token);
+            navigate('/');
+          } catch (err: any) {
+            const msg = err?.response?.data?.message || '카카오 로그인 연동 중 오류가 발생했습니다.';
+            setError(msg);
+          } finally {
+            setLoading(false);
+          }
+        },
+        fail: (err: any) => {
+          console.error('Kakao login failed:', err);
+          setError('카카오 로그인 인증에 실패했습니다.');
+        }
+      });
+    } catch (e) {
+      console.error('Kakao Auth trigger error:', e);
+      setError('카카오 로그인을 실행하는 중에 오류가 발생했습니다.');
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -331,13 +453,13 @@ export default function Auth() {
             <div className="space-y-3">
               <button
                 type="button"
-                onClick={() => alert('카카오 로그인은 준비 중입니다.')}
+                onClick={handleKakaoLogin}
                 className="w-full flex items-center justify-center space-x-2 bg-[#FEE500] hover:bg-[#FCE000] text-[#191919] rounded-2xl py-3.5 text-xs font-bold transition-colors"
               >
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="#191919" xmlns="http://www.w3.org/2000/svg">
                   <path d="M12 3c-4.97 0-9 3.18-9 7.1 0 2.5 1.62 4.7 4.1 5.92-.17.6-.62 2.22-.7 2.56-.12.48.17.47.36.35.15-.1 2.37-1.6 3.32-2.24.62.1 1.26.17 1.92.17 4.97 0 9-3.18 9-7.1S16.97 3 12 3z"/>
                 </svg>
-                <span>카카오 로그인</span>
+                <span>{kakaoKey ? '카카오 로그인' : '카카오 로그인 (Key 설정 필요)'}</span>
               </button>
               
               {clientId ? (

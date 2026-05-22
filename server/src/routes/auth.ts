@@ -317,5 +317,87 @@ router.post('/google', async (req, res) => {
   }
 });
 
+// Kakao 로그인 및 가입
+router.post('/kakao', async (req, res) => {
+  try {
+    const { token, email: mockEmail, nickname: mockNickname } = req.body;
+    if (!token) {
+      return res.status(400).json({ message: '인증 토큰이 누락되었습니다.' });
+    }
+
+    let email = '';
+    let name = '';
+
+    if (token.startsWith('mock_kakao_token_')) {
+      // Mock Kakao Login
+      if (!mockEmail || !mockNickname) {
+        return res.status(400).json({ message: '모의 로그인 정보가 올바르지 않습니다.' });
+      }
+      email = mockEmail;
+      name = mockNickname;
+    } else {
+      // Real Kakao Login: Verify via Kakao API
+      try {
+        const kakaoRes = await fetch('https://kapi.kakao.com/v2/user/me', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-type': 'application/x-www-form-urlencoded;charset=utf-8',
+          },
+        });
+        if (!kakaoRes.ok) {
+          return res.status(401).json({ message: '유효하지 않은 Kakao 토큰입니다.' });
+        }
+        const payload = (await kakaoRes.json()) as any;
+        email = payload.kakao_account?.email || `${payload.id}@kakao.user`;
+        name = payload.kakao_account?.profile?.nickname || payload.properties?.nickname || '카카오사용자';
+      } catch (err) {
+        return res.status(401).json({ message: 'Kakao 토큰 인증 중 오류가 발생했습니다.' });
+      }
+    }
+
+    // Find user by email
+    let user = await prisma.user.findUnique({ where: { email } });
+
+    if (!user) {
+      // Automatic sign up!
+      // Generate unique nickname
+      let nickname = name.replace(/\s+/g, ''); // Remove spaces
+      if (!nickname) nickname = '카카오사용자';
+      
+      let nicknameExists = await prisma.user.findUnique({ where: { nickname } });
+      while (nicknameExists) {
+        nickname = `${nickname}#${Math.floor(1000 + Math.random() * 9000)}`;
+        nicknameExists = await prisma.user.findUnique({ where: { nickname } });
+      }
+
+      // Cryptographically secure dummy password
+      const secureRandomPassword = Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+      const passwordHash = await bcrypt.hash(secureRandomPassword, 10);
+
+      user = await prisma.user.create({
+        data: {
+          email,
+          nickname,
+          passwordHash,
+        },
+      });
+    }
+
+    // Sign JWT token
+    const appToken = jwt.sign(
+      { userId: user.id },
+      process.env.JWT_SECRET!,
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      user: { id: user.id, email: user.email, nickname: user.nickname },
+      token: appToken,
+    });
+  } catch (err) {
+    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+  }
+});
+
 export default router;
 
