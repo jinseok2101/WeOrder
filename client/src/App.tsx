@@ -9,8 +9,6 @@ import Home from './pages/Home';
 import CreateRoom from './pages/CreateRoom';
 import RoomDetail from './pages/RoomDetail';
 import MyOrders from './pages/MyOrders';
-import MockGoogleLogin from './pages/MockGoogleLogin';
-import MockKakaoLogin from './pages/MockKakaoLogin';
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -41,8 +39,6 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/auth" element={<Auth />} />
-        <Route path="/mock-google-login" element={<MockGoogleLogin />} />
-        <Route path="/mock-kakao-login" element={<MockKakaoLogin />} />
 
         <Route
           path="/"
