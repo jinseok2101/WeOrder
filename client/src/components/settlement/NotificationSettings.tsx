@@ -25,25 +25,57 @@ export default function NotificationSettings() {
     },
   });
 
-  const [permission, setPermission] = useState(() => 
-    'Notification' in window ? Notification.permission : 'denied'
-  );
+  const [permission, setPermission] = useState(() => {
+    if ('Notification' in window) {
+      return Notification.permission;
+    }
+    return 'unsupported';
+  });
   const [showWebGuide, setShowWebGuide] = useState(false);
 
   const handleRequestDevicePermission = async () => {
-    if ('Notification' in window) {
-      if (Notification.permission === 'denied') {
-        setShowWebGuide(true);
+    if (!('Notification' in window)) {
+      setShowWebGuide(true);
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      if (isIOS) {
+        alert(
+          "아이폰(iOS)에서 푸시 알림을 받으려면 앱이 '홈 화면에 추가'되어야 합니다.\n\n" +
+          "1. Safari 브라우저에서 하단의 [공유] 버튼을 누릅니다.\n" +
+          "2. [홈 화면에 추가] 메뉴를 클릭합니다.\n" +
+          "3. 홈 화면에 설치된 앱을 실행한 후 다시 [알림 수신 설정]에서 허용을 진행해주세요."
+        );
+      } else {
+        alert("현재 사용 중인 브라우저/기기가 알림 기능을 지원하지 않거나 설정이 비활성화되어 있습니다.");
+      }
+      return;
+    }
+
+    if (Notification.permission === 'denied') {
+      setShowWebGuide(true);
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone;
+      
+      if (isStandalone) {
+        alert(
+          "홈 화면에 설치된 앱의 알림 권한이 차단되어 있습니다.\n\n" +
+          "알림을 받으시려면 휴대폰 시스템 설정에서 권한을 켜주셔야 합니다:\n\n" +
+          "방법: [휴대폰 설정] > [알림] > [WeOrder] 앱 선택 > [알림 허용] 켜기"
+        );
+      } else {
         alert(
           "알림 권한이 차단되어 있어 직접 설정을 변경해주셔야 합니다.\n\n" +
           "1. 브라우저 주소창 왼쪽의 자물쇠(🔒) 또는 제어 아이콘을 클릭합니다.\n" +
           "2. '알림' 권한을 '허용'으로 변경해주세요.\n" +
           "3. 변경 후 페이지를 새로고침(F5) 해주세요."
         );
-        return;
       }
+      return;
+    }
+
+    try {
       await registerPushNotifications();
       setPermission(Notification.permission);
+    } catch (e) {
+      console.warn("Failed to request permission:", e);
     }
   };
 
@@ -71,12 +103,43 @@ export default function NotificationSettings() {
       {isOpen && (
         <div className="p-4 border-t border-gray-100 space-y-4">
           {permission !== 'granted' && (
-            permission === 'denied' ? (
+            permission === 'unsupported' ? (
+              <div className="bg-sky-50 border border-sky-200 rounded-xl p-3.5 mb-4 transition-all duration-300">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-sm font-bold text-sky-800 block">기기 알림 지원 설정이 필요합니다</span>
+                    <span className="text-xs text-sky-600">아이폰(iOS) 등 일부 모바일은 '홈 화면에 추가' 설치 시에만 알림이 활성화됩니다.</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRequestDevicePermission}
+                    className="bg-sky-500 hover:bg-sky-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap ml-2 shadow-sm"
+                  >
+                    설치 방법 보기
+                  </button>
+                </div>
+                {showWebGuide && (
+                  <div className="mt-3 pt-3 border-t border-sky-100 text-xs text-sky-700 space-y-2 bg-white/60 p-3 rounded-lg">
+                    <p className="font-bold flex items-center gap-1">📱 아이폰(iOS) 설치 및 알림 연동 방법:</p>
+                    <ol className="list-decimal list-inside space-y-1.5 text-[11px] leading-relaxed pl-1">
+                      <li>반드시 <strong className="text-sky-900">Safari 브라우저</strong>로 본 사이트에 접속합니다.</li>
+                      <li>하단 툴바의 <strong className="text-sky-900">[공유(📤)]</strong> 버튼을 클릭합니다.</li>
+                      <li>목록에서 <strong className="text-sky-900">[홈 화면에 추가]</strong> 버튼을 선택하여 설치합니다.</li>
+                      <li>설치 후 홈 화면에서 앱을 실행해 로그인 후 알림 수신 설정을 켜주세요.</li>
+                    </ol>
+                  </div>
+                )}
+              </div>
+            ) : permission === 'denied' ? (
               <div className="bg-rose-50 border border-rose-200 rounded-xl p-3.5 mb-4 transition-all duration-300">
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-sm font-bold text-rose-800 block">기기 알림 권한이 차단되었습니다</span>
-                    <span className="text-xs text-rose-600">푸시 알림을 받으려면 브라우저 설정에서 권한을 변경해주세요.</span>
+                    <span className="text-xs text-rose-600">
+                      {window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone 
+                        ? "설정 앱에서 알림을 허용해주셔야 푸시 알림이 발송됩니다." 
+                        : "푸시 알림을 받으려면 브라우저 설정에서 권한을 변경해주세요."}
+                    </span>
                   </div>
                   <button
                     type="button"
@@ -87,14 +150,25 @@ export default function NotificationSettings() {
                   </button>
                 </div>
                 {showWebGuide && (
-                  <div className="mt-3 pt-3 border-t border-rose-100 text-xs text-rose-700 space-y-2 bg-white/60 p-3 rounded-lg">
-                    <p className="font-bold flex items-center gap-1">🔓 브라우저 알림 차단 해제 방법:</p>
-                    <ol className="list-decimal list-inside space-y-1.5 text-[11px] leading-relaxed pl-1">
-                      <li>브라우저 주소창 왼쪽의 <strong className="text-rose-900">자물쇠(🔒) 또는 설정 조절기</strong> 아이콘을 클릭합니다.</li>
-                      <li><strong>알림</strong> 권한 항목을 찾아 <strong className="text-rose-900">'허용'</strong> 또는 스위치를 활성화합니다.</li>
-                      <li>설정 변경 후 <strong className="text-rose-900">페이지를 새로고침(F5)</strong>하시면 실시간 정산 및 채팅 알림이 정상 작동합니다.</li>
-                    </ol>
-                  </div>
+                  (window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone) ? (
+                    <div className="mt-3 pt-3 border-t border-rose-100 text-xs text-rose-700 space-y-2 bg-white/60 p-3 rounded-lg">
+                      <p className="font-bold flex items-center gap-1">🔓 휴대폰 시스템 알림 차단 해제 방법 (PWA 앱):</p>
+                      <ol className="list-decimal list-inside space-y-1.5 text-[11px] leading-relaxed pl-1">
+                        <li>바탕화면의 <strong className="text-rose-900">WeOrder 앱 아이콘을 길게 누르거나</strong> 휴대폰 <strong className="text-rose-900">[설정]</strong> 앱을 실행합니다.</li>
+                        <li>설정 내의 <strong className="text-rose-900">[알림]</strong> 메뉴로 이동해 <strong className="text-rose-900">[WeOrder]</strong> 앱을 선택합니다.</li>
+                        <li><strong className="text-rose-900">'알림 허용' 스위치</strong>를 활성화해주시면 정상적으로 실시간 알림이 수신됩니다.</li>
+                      </ol>
+                    </div>
+                  ) : (
+                    <div className="mt-3 pt-3 border-t border-rose-100 text-xs text-rose-700 space-y-2 bg-white/60 p-3 rounded-lg">
+                      <p className="font-bold flex items-center gap-1">🔓 브라우저 알림 차단 해제 방법:</p>
+                      <ol className="list-decimal list-inside space-y-1.5 text-[11px] leading-relaxed pl-1">
+                        <li>브라우저 주소창 왼쪽의 <strong className="text-rose-900">자물쇠(🔒) 또는 설정 조절기</strong> 아이콘을 클릭합니다.</li>
+                        <li><strong>알림</strong> 권한 항목을 찾아 <strong className="text-rose-900">'허용'</strong> 또는 스위치를 활성화합니다.</li>
+                        <li>설정 변경 후 <strong className="text-rose-900">페이지를 새로고침(F5)</strong>하시면 실시간 정산 및 채팅 알림이 정상 작동합니다.</li>
+                      </ol>
+                    </div>
+                  )
                 )}
               </div>
             ) : (
