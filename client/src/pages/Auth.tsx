@@ -90,7 +90,7 @@ export default function Auth() {
         if (container) {
           window.google.accounts.id.renderButton(container, {
             theme: 'outline',
-            size: 'large',
+            size: 'medium',
             width: 320, // fits perfectly inside the max-w-sm login card
           });
         }
