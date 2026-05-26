@@ -31,8 +31,8 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const clientId = (import.meta.env.VITE_GOOGLE_CLIENT_ID as string) || '';
-  const kakaoKey = (import.meta.env.VITE_KAKAO_JS_KEY as string) || '';
+  const clientId = (import.meta.env.VITE_GOOGLE_CLIENT_ID as string) || localStorage.getItem('weorder_google_client_id') || '';
+  const kakaoKey = (import.meta.env.VITE_KAKAO_JS_KEY as string) || localStorage.getItem('weorder_kakao_js_key') || '';
 
   // Dynamic GSI Loader & Render Hook on the main page
   useEffect(() => {
@@ -140,8 +140,12 @@ export default function Auth() {
     setError('');
 
     if (!kakaoKey) {
-      console.warn('Kakao JS Key가 설정되지 않았습니다.');
-      return setError('카카오 로그인을 사용할 수 없습니다. 시스템 설정을 확인해 주세요.');
+      const inputKey = prompt('카카오 JavaScript 키가 설정되지 않았습니다. 카카오 로그인 연동을 위해 발급받으신 JavaScript 키를 입력해 주세요:');
+      if (inputKey && inputKey.trim()) {
+        localStorage.setItem('weorder_kakao_js_key', inputKey.trim());
+        window.location.reload();
+      }
+      return;
     }
 
     if (!window.Kakao) {
@@ -369,7 +373,13 @@ export default function Auth() {
               ) : (
                 <button
                   type="button"
-                  onClick={() => setError('구글 클라이언트 ID(VITE_GOOGLE_CLIENT_ID)가 설정되지 않았습니다.')}
+                  onClick={() => {
+                    const inputId = prompt('구글 클라이언트 ID가 설정되지 않았습니다. 구글 로그인 연동을 위해 발급받으신 클라이언트 ID를 입력해 주세요:');
+                    if (inputId && inputId.trim()) {
+                      localStorage.setItem('weorder_google_client_id', inputId.trim());
+                      window.location.reload();
+                    }
+                  }}
                   className="w-full flex items-center justify-center space-x-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-2xl py-3.5 text-xs font-bold transition-colors shadow-sm"
                 >
                   <svg viewBox="0 0 24 24" width="14" height="14" xmlns="http://www.w3.org/2000/svg">
