@@ -614,14 +614,7 @@ export default function Auth() {
                 <span>카카오 계정으로 로그인</span>
               </button>
 
-              {clientId ? (
-                <div className="w-full flex justify-center h-8">
-                  <div
-                    id="realGoogleButtonAuth"
-                    className="w-full flex justify-center h-8"
-                  ></div>
-                </div>
-              ) : (
+              <div className="relative w-[320px] h-8 mx-auto">
                 <button
                   type="button"
                   onClick={() => {
@@ -636,7 +629,7 @@ export default function Auth() {
                       window.location.reload();
                     }
                   }}
-                  className="w-[320px] h-8 flex items-center justify-center space-x-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-[4px] text-xs font-semibold transition-colors shadow-sm mx-auto"
+                  className="w-full h-full flex items-center justify-center space-x-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-[4px] text-xs font-semibold transition-colors shadow-sm"
                 >
                   <svg
                     viewBox="0 0 24 24"
@@ -663,7 +656,14 @@ export default function Auth() {
                   </svg>
                   <span>Google 계정으로 로그인</span>
                 </button>
-              )}
+
+                {clientId && (
+                  <div
+                    id="realGoogleButtonAuth"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 [&_iframe]:w-full [&_iframe]:h-full [&_iframe]:cursor-pointer"
+                  ></div>
+                )}
+              </div>
             </div>
 
             <div className="text-center mt-8 space-y-2">
