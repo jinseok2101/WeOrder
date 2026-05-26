@@ -178,13 +178,8 @@ export default function Auth() {
     setError("");
 
     if (!kakaoKey) {
-      const inputKey = prompt(
-        "카카오 JavaScript 키가 설정되지 않았습니다. 카카오 로그인 연동을 위해 발급받으신 JavaScript 키를 입력해 주세요:",
-      );
-      if (inputKey && inputKey.trim()) {
-        localStorage.setItem("weorder_kakao_js_key", inputKey.trim());
-        window.location.reload();
-      }
+      console.error("카카오 JavaScript 키가 설정되지 않았습니다.");
+      setError("카카오 로그인 설정이 완료되지 않았습니다. 관리자에게 문의해 주세요.");
       return;
     }
 
@@ -618,18 +613,10 @@ export default function Auth() {
                 <button
                   type="button"
                   onClick={() => {
-                    const inputId = prompt(
-                      "구글 클라이언트 ID가 설정되지 않았습니다. 구글 로그인 연동을 위해 발급받으신 클라이언트 ID를 입력해 주세요:",
-                    );
-                    if (inputId && inputId.trim()) {
-                      localStorage.setItem(
-                        "weorder_google_client_id",
-                        inputId.trim(),
-                      );
-                      window.location.reload();
-                    }
+                    console.error("구글 클라이언트 ID가 설정되지 않았습니다.");
+                    setError("구글 로그인 설정이 완료되지 않았습니다. 관리자에게 문의해 주세요.");
                   }}
-                  className="w-full h-full flex items-center justify-center space-x-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-[4px] text-xs font-semibold transition-colors shadow-sm"
+                  className="w-full h-full flex items-center justify-center space-x-2 bg-white border border-[#DADCE0] hover:bg-gray-50 text-[#3C4043] rounded-[4px] text-xs font-semibold transition-colors shadow-sm"
                 >
                   <svg
                     viewBox="0 0 24 24"

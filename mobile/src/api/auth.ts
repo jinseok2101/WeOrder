@@ -37,4 +37,6 @@ export const authApi = {
     api.post<{ message: string }>('/auth/reset-password', data).then((r) => r.data),
   googleLogin: (data: { token: string; email?: string; name?: string }) =>
     api.post<AuthResponse>('/auth/google', data).then((r) => r.data),
+  kakaoLogin: (data: { token: string; email?: string; nickname?: string }) =>
+    api.post<AuthResponse>('/auth/kakao', data).then((r) => r.data),
 };

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Image, Alert, Modal } from 'react-native';
 import { Eye, EyeOff } from 'lucide-react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Path, Circle } from 'react-native-svg';
+import { WebView } from 'react-native-webview';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authApi } from '../api/auth';
 import { useAuthStore } from '../store/authStore';
@@ -33,6 +34,13 @@ export default function AuthScreen() {
   const [googleError, setGoogleError] = useState('');
   const [googleLoading, setGoogleLoading] = useState(false);
 
+  const [kakaoKeyModalVisible, setKakaoKeyModalVisible] = useState(false);
+  const [kakaoRestKey, setKakaoRestKey] = useState('');
+  const [kakaoRedirectUri, setKakaoRedirectUri] = useState('https://localhost/auth/kakao/callback');
+  const [kakaoWebViewModalVisible, setKakaoWebViewModalVisible] = useState(false);
+  const [kakaoCustomKeyInput, setKakaoCustomKeyInput] = useState('');
+  const [kakaoCustomRedirectUriInput, setKakaoCustomRedirectUriInput] = useState('https://localhost/auth/kakao/callback');
+
   useEffect(() => {
     const loadGoogleAccounts = async () => {
       try {
@@ -56,6 +64,49 @@ export default function AuthScreen() {
     };
     loadGoogleAccounts();
   }, []);
+
+  useEffect(() => {
+    const loadKakaoKey = async () => {
+      try {
+        const envKey = process.env.EXPO_PUBLIC_KAKAO_REST_KEY || '';
+        const envUri = process.env.EXPO_PUBLIC_KAKAO_REDIRECT_URI || '';
+
+        if (envKey) {
+          setKakaoRestKey(envKey);
+          setKakaoCustomKeyInput(envKey);
+        } else {
+          const storedKey = await AsyncStorage.getItem('weorder_kakao_rest_key');
+          if (storedKey) {
+            setKakaoRestKey(storedKey);
+            setKakaoCustomKeyInput(storedKey);
+          }
+        }
+
+        if (envUri) {
+          setKakaoRedirectUri(envUri);
+          setKakaoCustomRedirectUriInput(envUri);
+        } else {
+          const storedUri = await AsyncStorage.getItem('weorder_kakao_redirect_uri');
+          if (storedUri) {
+            setKakaoRedirectUri(storedUri);
+            setKakaoCustomRedirectUriInput(storedUri);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to load Kakao REST key', e);
+      }
+    };
+    loadKakaoKey();
+  }, []);
+
+  const handleKakaoLoginStart = () => {
+    setError('');
+    if (!kakaoRestKey) {
+      setKakaoKeyModalVisible(true);
+    } else {
+      setKakaoWebViewModalVisible(true);
+    }
+  };
 
   const handleGoogleLogin = async (email: string, name: string) => {
     setGoogleError('');
@@ -273,7 +324,7 @@ export default function AuthScreen() {
 
             <View className="flex-row gap-3">
               <TouchableOpacity
-                onPress={() => alert('카카오 로그인은 준비 중입니다.')}
+                onPress={handleKakaoLoginStart}
                 className="flex-1 flex-row bg-[#FEE500] rounded-2xl py-3 items-center justify-center gap-2"
               >
                 <Svg viewBox="0 0 24 24" width="16" height="16">
@@ -284,7 +335,7 @@ export default function AuthScreen() {
 
               <TouchableOpacity
                 onPress={() => setGoogleModalVisible(true)}
-                className="flex-1 flex-row bg-gray-100 rounded-2xl py-3 items-center justify-center gap-2"
+                className="flex-1 flex-row bg-white border border-[#DADCE0] rounded-2xl py-3 items-center justify-center gap-2 active:bg-gray-50"
               >
                 <Svg viewBox="0 0 24 24" width="14" height="14">
                   <Path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -292,7 +343,7 @@ export default function AuthScreen() {
                   <Path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05" />
                   <Path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335" />
                 </Svg>
-                <Text className="text-gray-700 text-xs font-bold">Google 로그인</Text>
+                <Text className="text-[#3C4043] text-xs font-semibold">Google 로그인</Text>
               </TouchableOpacity>
             </View>
 
@@ -554,9 +605,9 @@ export default function AuthScreen() {
                     className="w-full flex-row items-center px-4 py-4 bg-gray-50 active:bg-gray-100 rounded-2xl border border-gray-100"
                   >
                     <View className="w-9 h-9 rounded-full bg-gray-200 items-center justify-center mr-3">
-                      <Svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#6b7280" strokeWidth="2">
-                        <circle cx="12" cy="8" r="4" />
-                        <path d="M18 21a6 6 0 0 0-12 0" />
+                      <Svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#6b7280" strokeWidth={2}>
+                        <Circle cx={12} cy={8} r={4} />
+                        <Path d="M18 21a6 6 0 0 0-12 0" />
                       </Svg>
                     </View>
                     <View className="flex-1">
@@ -626,6 +677,160 @@ export default function AuthScreen() {
               </TouchableOpacity>
             )}
           </View>
+        </View>
+      </Modal>
+
+      {/* 1. Kakao Key Input Modal */}
+      <Modal
+        visible={kakaoKeyModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setKakaoKeyModalVisible(false)}
+      >
+        <View className="flex-1 bg-black/50 justify-center items-center p-4">
+          <View className="w-full max-w-sm bg-white rounded-[32px] p-8 shadow-2xl">
+            <View className="items-center mb-6">
+              <Text className="text-xl font-bold text-gray-900 mb-2">카카오 로그인 설정</Text>
+              <Text className="text-xs text-gray-500 text-center">
+                카카오 REST API 키와 Redirect URI가 필요합니다. 발급받으신 정보들을 입력해 주세요.
+              </Text>
+            </View>
+
+            <View className="gap-4">
+              <View>
+                <Text className="text-xs font-bold text-gray-700 mb-1.5">REST API 키</Text>
+                <TextInput
+                  value={kakaoCustomKeyInput}
+                  onChangeText={setKakaoCustomKeyInput}
+                  className="w-full bg-gray-100 rounded-2xl px-5 py-3.5 text-sm text-gray-900"
+                  autoCapitalize="none"
+                  placeholder="카카오 REST API 키 입력"
+                  placeholderTextColor="#9ca3af"
+                />
+              </View>
+
+              <View>
+                <Text className="text-xs font-bold text-gray-700 mb-1.5">Redirect URI</Text>
+                <TextInput
+                  value={kakaoCustomRedirectUriInput}
+                  onChangeText={setKakaoCustomRedirectUriInput}
+                  className="w-full bg-gray-100 rounded-2xl px-5 py-3.5 text-sm text-gray-900"
+                  autoCapitalize="none"
+                  placeholder="예: https://weorder-client.vercel.app/auth/kakao/callback"
+                  placeholderTextColor="#9ca3af"
+                />
+              </View>
+
+              <View className="flex-row justify-between items-center mt-2">
+                <TouchableOpacity
+                  onPress={() => setKakaoKeyModalVisible(false)}
+                  className="px-4 py-2.5"
+                >
+                  <Text className="text-xs text-gray-400 font-bold">취소</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={async () => {
+                    const trimmedKey = kakaoCustomKeyInput.trim();
+                    const trimmedUri = kakaoCustomRedirectUriInput.trim();
+                    if (!trimmedKey) {
+                      Alert.alert('오류', 'REST API 키를 입력해 주세요.');
+                      return;
+                    }
+                    if (!trimmedUri) {
+                      Alert.alert('오류', 'Redirect URI를 입력해 주세요.');
+                      return;
+                    }
+                    try {
+                      await AsyncStorage.setItem('weorder_kakao_rest_key', trimmedKey);
+                      await AsyncStorage.setItem('weorder_kakao_redirect_uri', trimmedUri);
+                      setKakaoRestKey(trimmedKey);
+                      setKakaoRedirectUri(trimmedUri);
+                      setKakaoKeyModalVisible(false);
+                      setKakaoWebViewModalVisible(true);
+                    } catch (e) {
+                      Alert.alert('오류', '설정 저장에 실패했습니다.');
+                    }
+                  }}
+                  className="bg-primary-500 rounded-xl px-5 py-2.5"
+                >
+                  <Text className="text-white font-bold text-xs">확인</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* 2. Kakao WebView Modal */}
+      <Modal
+        visible={kakaoWebViewModalVisible}
+        transparent={false}
+        animationType="slide"
+        onRequestClose={() => setKakaoWebViewModalVisible(false)}
+      >
+        <View className="flex-1 bg-white">
+          {/* WebView Header */}
+          <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-100 mt-12">
+            <TouchableOpacity onPress={() => setKakaoWebViewModalVisible(false)}>
+              <Text className="text-gray-500 text-sm font-bold">닫기</Text>
+            </TouchableOpacity>
+            <Text className="text-sm font-bold text-gray-900">카카오 계정으로 로그인</Text>
+            <View className="w-8" /> {/* Spacer to keep the title mathematically centered */}
+          </View>
+
+          {/* WebView Body */}
+          {kakaoWebViewModalVisible && (
+            <WebView
+              source={{
+                uri: `https://kauth.kakao.com/oauth/authorize?client_id=${kakaoRestKey}&redirect_uri=${kakaoRedirectUri}&response_type=code`,
+              }}
+              onNavigationStateChange={async (newNavState) => {
+                const { url } = newNavState;
+                if (!url) return;
+
+                if (url.startsWith(kakaoRedirectUri)) {
+                  const matches = url.match(/[?&]code=([^&#]+)/);
+                  if (matches && matches[1]) {
+                    const authCode = matches[1];
+                    setKakaoWebViewModalVisible(false);
+                    setLoading(true);
+                    setError('');
+                    try {
+                      const response = await fetch('https://kauth.kakao.com/oauth/token', {
+                        method: 'POST',
+                        headers: {
+                          'Content-type': 'application/x-www-form-urlencoded;charset=utf-8',
+                        },
+                        body: `grant_type=authorization_code&client_id=${kakaoRestKey}&redirect_uri=${kakaoRedirectUri}&code=${authCode}`,
+                      });
+
+                      const data = await response.json();
+                      const accessToken = data.access_token;
+                      
+                      if (accessToken) {
+                        const res = await authApi.kakaoLogin({ token: accessToken });
+                        setAuth(res.user, res.token);
+                      } else {
+                        setError('카카오 토큰 발급에 실패했습니다.');
+                      }
+                    } catch (err: any) {
+                      setError(err?.response?.data?.message || '카카오 로그인 중 오류가 발생했습니다.');
+                    } finally {
+                      setLoading(false);
+                    }
+                  } else {
+                    const errMatches = url.match(/[?&]error=([^&#]+)/);
+                    if (errMatches) {
+                      setKakaoWebViewModalVisible(false);
+                      setError(`카카오 로그인 실패: ${errMatches[1]}`);
+                    }
+                  }
+                }
+              }}
+              style={{ flex: 1 }}
+            />
+          )}
         </View>
       </Modal>
     </View>
