@@ -15,6 +15,14 @@ export interface AuthResponse {
   token: string;
 }
 
+export interface SocialLoginResponse {
+  user?: User;
+  token?: string;
+  isNewUser: boolean;
+  email?: string;
+  name?: string;
+}
+
 export const authApi = {
   register: (data: RegisterPayload) =>
     api.post<AuthResponse>('/auth/register', data).then((r) => r.data),
@@ -36,8 +44,12 @@ export const authApi = {
   resetPassword: (data: { email: string; nickname: string; newPassword: string }) =>
     api.post<{ message: string }>('/auth/reset-password', data).then((r) => r.data),
   googleLogin: (data: { token: string; email?: string; name?: string }) =>
-    api.post<AuthResponse>('/auth/google', data).then((r) => r.data),
+    api.post<SocialLoginResponse>('/auth/google', data).then((r) => r.data),
   kakaoLogin: (data: { token: string; email?: string; nickname?: string }) =>
-    api.post<AuthResponse>('/auth/kakao', data).then((r) => r.data),
+    api.post<SocialLoginResponse>('/auth/kakao', data).then((r) => r.data),
+  checkNickname: (nickname: string) =>
+    api.get<{ available: boolean }>('/auth/check-nickname', { params: { nickname } }).then((r) => r.data),
+  socialSignup: (data: { email: string; nickname: string; name?: string }) =>
+    api.post<AuthResponse>('/auth/social-signup', data).then((r) => r.data),
 };
 

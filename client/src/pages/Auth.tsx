@@ -17,8 +17,16 @@ export default function Auth() {
   const setAuth = useAuthStore((s) => s.setAuth);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
-  const [mode, setMode] = useState<'login' | 'register' | 'find'>('login');
+  const [mode, setMode] = useState<'login' | 'register' | 'find' | 'social-signup'>('login');
   const [findTab, setFindTab] = useState<'id' | 'password'>('id');
+  
+  // 소셜 로그인 회원가입 온보딩 상태
+  const [socialEmail, setSocialEmail] = useState('');
+  const [socialName, setSocialName] = useState('');
+  const [socialNicknameInput, setSocialNicknameInput] = useState('');
+  const [nicknameError, setNicknameError] = useState('');
+  const [isNicknameChecked, setIsNicknameChecked] = useState(false);
+  const [checkingNickname, setCheckingNickname] = useState(false);
   
   const [form, setForm] = useState({ email: '', nickname: '', password: '' });
   const [findForm, setFindForm] = useState({ nickname: '', email: '', newPassword: '' });
@@ -52,8 +60,20 @@ export default function Auth() {
               setLoading(true);
               try {
                 const res = await authApi.googleLogin({ token: response.credential });
-                setAuth(res.user, res.token);
-                navigate('/');
+                if (res.isNewUser) {
+                  setSocialEmail(res.email || '');
+                  setSocialName(res.name || '');
+                  setSocialNicknameInput((res.name || '구글사용자').replace(/\s+/g, ''));
+                  setIsNicknameChecked(false);
+                  setNicknameError('');
+                  setMode('social-signup');
+                  setError('');
+                } else {
+                  if (res.user && res.token) {
+                    setAuth(res.user, res.token);
+                    navigate('/');
+                  }
+                }
               } catch (err: any) {
                 const msg = err?.response?.data?.message || '구글 로그인 중 오류가 발생했습니다.';
                 setError(msg);
@@ -158,8 +178,20 @@ export default function Auth() {
           setLoading(true);
           try {
             const res = await authApi.kakaoLogin({ token: authObj.access_token });
-            setAuth(res.user, res.token);
-            navigate('/');
+            if (res.isNewUser) {
+              setSocialEmail(res.email || '');
+              setSocialName(res.name || '');
+              setSocialNicknameInput((res.name || '카카오사용자').replace(/\s+/g, ''));
+              setIsNicknameChecked(false);
+              setNicknameError('');
+              setMode('social-signup');
+              setError('');
+            } else {
+              if (res.user && res.token) {
+                setAuth(res.user, res.token);
+                navigate('/');
+              }
+            }
           } catch (err: any) {
             const msg = err?.response?.data?.message || '카카오 로그인 연동 중 오류가 발생했습니다.';
             setError(msg);
@@ -175,6 +207,57 @@ export default function Auth() {
     } catch (e) {
       console.error('Kakao Auth trigger error:', e);
       setError('카카오 로그인을 실행하는 중에 오류가 발생했습니다.');
+    }
+  };
+
+  const handleCheckNickname = async () => {
+    setNicknameError('');
+    setIsNicknameChecked(false);
+
+    const nickname = socialNicknameInput.trim();
+    if (!nickname) {
+      return setNicknameError('닉네임을 입력해 주세요.');
+    }
+
+    setCheckingNickname(true);
+    try {
+      const res = await authApi.checkNickname(nickname);
+      if (res.available) {
+        setIsNicknameChecked(true);
+        setNicknameError('');
+      } else {
+        setNicknameError('이미 사용 중인 닉네임입니다.');
+      }
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || '닉네임 중복 확인 중 오류가 발생했습니다.';
+      setNicknameError(msg);
+    } finally {
+      setCheckingNickname(false);
+    }
+  };
+
+  const handleSocialSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    const nickname = socialNicknameInput.trim();
+    if (!nickname) return setError('닉네임을 입력해 주세요.');
+    if (!isNicknameChecked) return setError('닉네임 중복 확인을 진행해 주세요.');
+
+    setLoading(true);
+    try {
+      const res = await authApi.socialSignup({
+        email: socialEmail,
+        nickname: nickname,
+        name: socialName
+      });
+      setAuth(res.user, res.token);
+      navigate('/');
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || '회원가입 완료 중 오류가 발생했습니다.';
+      setError(msg);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -272,7 +355,99 @@ export default function Auth() {
       </div>
 
       <div className="w-full max-w-sm bg-white rounded-[32px] shadow-xl p-8">
-        {mode !== 'find' ? (
+        {mode === 'social-signup' ? (
+          <>
+            <div className="text-center mb-6">
+              <h2 className="text-xl font-extrabold text-gray-900">닉네임 설정</h2>
+              <p className="text-xs text-gray-500 mt-2 font-medium">
+                WeOrder에 오신 것을 환영합니다!<br />서비스에서 사용할 닉네임을 설정해 주세요.
+              </p>
+            </div>
+
+            <form onSubmit={handleSocialSignup} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1.5">이메일 계정</label>
+                <input
+                  type="text"
+                  value={socialEmail}
+                  disabled
+                  className="w-full bg-gray-50 border-0 rounded-2xl px-5 py-3.5 text-sm text-gray-400 font-semibold focus:outline-none cursor-not-allowed"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1.5">닉네임</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={socialNicknameInput}
+                    onChange={(e) => {
+                      setSocialNicknameInput(e.target.value);
+                      setIsNicknameChecked(false);
+                      setNicknameError('');
+                    }}
+                    maxLength={15}
+                    placeholder="예: 맛있는주문자"
+                    className="flex-1 bg-gray-100 border-0 rounded-2xl px-5 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCheckNickname}
+                    disabled={checkingNickname || !socialNicknameInput.trim()}
+                    className="bg-gray-800 hover:bg-black disabled:bg-gray-300 text-white rounded-2xl px-4 text-xs font-bold transition-all whitespace-nowrap"
+                  >
+                    {checkingNickname ? '확인 중...' : '중복 확인'}
+                  </button>
+                </div>
+                {nicknameError && (
+                  <p className="text-[11px] text-red-600 font-semibold mt-1.5 ml-1">
+                    ❌ {nicknameError}
+                  </p>
+                )}
+                {isNicknameChecked && (
+                  <p className="text-[11px] text-green-600 font-semibold mt-1.5 ml-1">
+                    ✅ 사용 가능한 닉네임입니다.
+                  </p>
+                )}
+              </div>
+
+              {error && (
+                <div className="bg-red-50 border border-red-100 rounded-2xl px-4 py-3 text-xs text-red-600">
+                  {error}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading || !isNicknameChecked || !socialNicknameInput.trim()}
+                className={cn(
+                  'w-full bg-primary-500 text-white rounded-2xl py-4 font-bold text-sm mt-2 hover:bg-primary-600 transition-colors shadow-lg shadow-primary-100 disabled:opacity-50 disabled:cursor-not-allowed',
+                  loading && 'opacity-60'
+                )}
+              >
+                {loading ? '가입 처리 중...' : '가입 완료 및 시작하기'}
+              </button>
+            </form>
+
+            <div className="text-center mt-6">
+              <button
+                type="button"
+                onClick={() => {
+                  setMode('login');
+                  setError('');
+                  setSocialEmail('');
+                  setSocialName('');
+                  setSocialNicknameInput('');
+                  setIsNicknameChecked(false);
+                  setNicknameError('');
+                }}
+                className="text-xs text-gray-500 font-bold hover:underline transition-colors"
+              >
+                로그인 화면으로 돌아가기
+              </button>
+            </div>
+          </>
+        ) : mode !== 'find' ? (
           <>
             <div className="text-center mb-6">
               <h2 className="text-xl font-extrabold text-gray-900">

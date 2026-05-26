@@ -277,28 +277,7 @@ router.post('/google', async (req, res) => {
     let user = await prisma.user.findUnique({ where: { email } });
 
     if (!user) {
-      // Automatic sign up!
-      // Generate unique nickname
-      let nickname = name.replace(/\s+/g, ''); // Remove spaces
-      if (!nickname) nickname = '구글사용자';
-      
-      let nicknameExists = await prisma.user.findUnique({ where: { nickname } });
-      while (nicknameExists) {
-        nickname = `${nickname}#${Math.floor(1000 + Math.random() * 9000)}`;
-        nicknameExists = await prisma.user.findUnique({ where: { nickname } });
-      }
-
-      // Cryptographically secure dummy password
-      const secureRandomPassword = Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
-      const passwordHash = await bcrypt.hash(secureRandomPassword, 10);
-
-      user = await prisma.user.create({
-        data: {
-          email,
-          nickname,
-          passwordHash,
-        },
-      });
+      return res.json({ isNewUser: true, email, name });
     }
 
     // Sign JWT token
@@ -311,6 +290,7 @@ router.post('/google', async (req, res) => {
     res.json({
       user: { id: user.id, email: user.email, nickname: user.nickname },
       token: appToken,
+      isNewUser: false,
     });
   } catch (err) {
     res.status(500).json({ message: '서버 오류가 발생했습니다.' });
@@ -359,28 +339,7 @@ router.post('/kakao', async (req, res) => {
     let user = await prisma.user.findUnique({ where: { email } });
 
     if (!user) {
-      // Automatic sign up!
-      // Generate unique nickname
-      let nickname = name.replace(/\s+/g, ''); // Remove spaces
-      if (!nickname) nickname = '카카오사용자';
-      
-      let nicknameExists = await prisma.user.findUnique({ where: { nickname } });
-      while (nicknameExists) {
-        nickname = `${nickname}#${Math.floor(1000 + Math.random() * 9000)}`;
-        nicknameExists = await prisma.user.findUnique({ where: { nickname } });
-      }
-
-      // Cryptographically secure dummy password
-      const secureRandomPassword = Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
-      const passwordHash = await bcrypt.hash(secureRandomPassword, 10);
-
-      user = await prisma.user.create({
-        data: {
-          email,
-          nickname,
-          passwordHash,
-        },
-      });
+      return res.json({ isNewUser: true, email, name });
     }
 
     // Sign JWT token
@@ -393,6 +352,79 @@ router.post('/kakao', async (req, res) => {
     res.json({
       user: { id: user.id, email: user.email, nickname: user.nickname },
       token: appToken,
+      isNewUser: false,
+    });
+  } catch (err) {
+    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+  }
+});
+
+// 닉네임 중복 여부 확인 API
+router.get('/check-nickname', async (req, res) => {
+  try {
+    const { nickname } = req.query;
+    if (!nickname || typeof nickname !== 'string') {
+      return res.status(400).json({ message: '닉네임을 입력해 주세요.' });
+    }
+
+    const trimmed = nickname.trim();
+    if (!trimmed) {
+      return res.status(400).json({ message: '닉네임은 공백일 수 없습니다.' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { nickname: trimmed } });
+    res.json({ available: !user });
+  } catch (err) {
+    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+  }
+});
+
+// 소셜 로그인 회원가입 (신규 유저의 닉네임 중복 검사 및 최종 등록)
+router.post('/social-signup', async (req, res) => {
+  try {
+    const { email, nickname } = req.body;
+    if (!email || !nickname) {
+      return res.status(400).json({ message: '이메일과 닉네임은 필수입니다.' });
+    }
+
+    const trimmedNickname = nickname.trim();
+    if (!trimmedNickname) {
+      return res.status(400).json({ message: '닉네임은 공백일 수 없습니다.' });
+    }
+
+    // 닉네임 중복 검사
+    const nicknameExists = await prisma.user.findUnique({ where: { nickname: trimmedNickname } });
+    if (nicknameExists) {
+      return res.status(409).json({ message: '이미 사용 중인 닉네임입니다.' });
+    }
+
+    // 이메일 중복 가입 방지 검사
+    const emailExists = await prisma.user.findUnique({ where: { email } });
+    if (emailExists) {
+      return res.status(400).json({ message: '이미 가입된 이메일 주소입니다.' });
+    }
+
+    // Cryptographically secure dummy password
+    const secureRandomPassword = Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+    const passwordHash = await bcrypt.hash(secureRandomPassword, 10);
+
+    const user = await prisma.user.create({
+      data: {
+        email,
+        nickname: trimmedNickname,
+        passwordHash,
+      },
+    });
+
+    const token = jwt.sign(
+      { userId: user.id },
+      process.env.JWT_SECRET!,
+      { expiresIn: '7d' }
+    );
+
+    res.status(201).json({
+      user: { id: user.id, email: user.email, nickname: user.nickname },
+      token,
     });
   } catch (err) {
     res.status(500).json({ message: '서버 오류가 발생했습니다.' });
