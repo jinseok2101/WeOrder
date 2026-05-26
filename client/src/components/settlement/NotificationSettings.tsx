@@ -28,9 +28,20 @@ export default function NotificationSettings() {
   const [permission, setPermission] = useState(() => 
     'Notification' in window ? Notification.permission : 'denied'
   );
+  const [showWebGuide, setShowWebGuide] = useState(false);
 
   const handleRequestDevicePermission = async () => {
     if ('Notification' in window) {
+      if (Notification.permission === 'denied') {
+        setShowWebGuide(true);
+        alert(
+          "알림 권한이 차단되어 있어 직접 설정을 변경해주셔야 합니다.\n\n" +
+          "1. 브라우저 주소창 왼쪽의 자물쇠(🔒) 또는 제어 아이콘을 클릭합니다.\n" +
+          "2. '알림' 권한을 '허용'으로 변경해주세요.\n" +
+          "3. 변경 후 페이지를 새로고침(F5) 해주세요."
+        );
+        return;
+      }
       await registerPushNotifications();
       setPermission(Notification.permission);
     }
@@ -60,19 +71,47 @@ export default function NotificationSettings() {
       {isOpen && (
         <div className="p-4 border-t border-gray-100 space-y-4">
           {permission !== 'granted' && (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 flex items-center justify-between">
-              <div>
-                <span className="text-sm font-bold text-amber-800 block">기기 알림이 꺼져있습니다</span>
-                <span className="text-xs text-amber-600">푸시 알림을 받으려면 기기 알림을 허용해주세요.</span>
+            permission === 'denied' ? (
+              <div className="bg-rose-50 border border-rose-200 rounded-xl p-3.5 mb-4 transition-all duration-300">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-sm font-bold text-rose-800 block">기기 알림 권한이 차단되었습니다</span>
+                    <span className="text-xs text-rose-600">푸시 알림을 받으려면 브라우저 설정에서 권한을 변경해주세요.</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRequestDevicePermission}
+                    className="bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap ml-2 shadow-sm"
+                  >
+                    해결 방법 보기
+                  </button>
+                </div>
+                {showWebGuide && (
+                  <div className="mt-3 pt-3 border-t border-rose-100 text-xs text-rose-700 space-y-2 bg-white/60 p-3 rounded-lg">
+                    <p className="font-bold flex items-center gap-1">🔓 브라우저 알림 차단 해제 방법:</p>
+                    <ol className="list-decimal list-inside space-y-1.5 text-[11px] leading-relaxed pl-1">
+                      <li>브라우저 주소창 왼쪽의 <strong className="text-rose-900">자물쇠(🔒) 또는 설정 조절기</strong> 아이콘을 클릭합니다.</li>
+                      <li><strong>알림</strong> 권한 항목을 찾아 <strong className="text-rose-900">'허용'</strong> 또는 스위치를 활성화합니다.</li>
+                      <li>설정 변경 후 <strong className="text-rose-900">페이지를 새로고침(F5)</strong>하시면 실시간 정산 및 채팅 알림이 정상 작동합니다.</li>
+                    </ol>
+                  </div>
+                )}
               </div>
-              <button
-                type="button"
-                onClick={handleRequestDevicePermission}
-                className="bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap ml-2"
-              >
-                권한 허용
-              </button>
-            </div>
+            ) : (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 flex items-center justify-between transition-all duration-300">
+                <div>
+                  <span className="text-sm font-bold text-amber-800 block">기기 알림이 꺼져있습니다</span>
+                  <span className="text-xs text-amber-600">푸시 알림을 받으려면 기기 알림을 허용해주세요.</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRequestDevicePermission}
+                  className="bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap ml-2 shadow-sm"
+                >
+                  권한 허용
+                </button>
+              </div>
+            )
           )}
 
           {/* 채팅 알림 */}

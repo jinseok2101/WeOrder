@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Switch, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Switch, Platform, Alert, Linking, AppState } from 'react-native';
 import { Bell, CheckSquare, ChevronDown, ChevronUp } from 'lucide-react-native';
 import { useAuthStore } from '../../store/authStore';
 import { authApi } from '../../api/auth';
 import { useMutation } from '@tanstack/react-query';
+import * as Notifications from 'expo-notifications';
+import { registerForPushNotificationsAsync } from '../../lib/push';
 
 export default function NotificationSettings() {
   const { user, setUser } = useAuthStore();
@@ -24,6 +26,88 @@ export default function NotificationSettings() {
       setTimeout(() => setSuccessMsg(''), 3000);
     },
   });
+
+  const [permissionStatus, setPermissionStatus] = useState<string>('undetermined');
+  const [showMobileGuide, setShowMobileGuide] = useState(false);
+
+  const checkPermission = async () => {
+    if (Platform.OS === 'web') return;
+    try {
+      const { status } = await Notifications.getPermissionsAsync();
+      setPermissionStatus(status);
+      if (status === 'granted') {
+        setShowMobileGuide(false);
+      }
+    } catch (error) {
+      console.warn('Failed to get notification permissions:', error);
+    }
+  };
+
+  useEffect(() => {
+    checkPermission();
+
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState === 'active') {
+        checkPermission();
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
+  const handleRequestMobilePermission = async () => {
+    if (Platform.OS === 'web') return;
+
+    try {
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      
+      if (existingStatus === 'denied') {
+        setShowMobileGuide(true);
+        Alert.alert(
+          '알림 권한 차단됨',
+          '알림 권한이 차단되어 있습니다. 설정 앱으로 이동하여 알림을 허용해주세요.',
+          [
+            { text: '취소', style: 'cancel' },
+            { 
+              text: '설정으로 이동', 
+              onPress: () => {
+                Linking.openSettings();
+              } 
+            }
+          ]
+        );
+        return;
+      }
+
+      const { status } = await Notifications.requestPermissionsAsync();
+      setPermissionStatus(status);
+
+      if (status === 'granted') {
+        await registerForPushNotificationsAsync();
+        setSuccessMsg('기기 알림이 활성화되었습니다.');
+        setTimeout(() => setSuccessMsg(''), 3000);
+      } else {
+        setShowMobileGuide(true);
+        Alert.alert(
+          '알림 권한 차단됨',
+          '알림 권한이 차단되어 있습니다. 설정 앱으로 이동하여 알림을 허용해주세요.',
+          [
+            { text: '취소', style: 'cancel' },
+            { 
+              text: '설정으로 이동', 
+              onPress: () => {
+                Linking.openSettings();
+              } 
+            }
+          ]
+        );
+      }
+    } catch (error) {
+      console.warn('Error requesting notification permission:', error);
+    }
+  };
 
   const handleToggle = (key: keyof typeof settings) => {
     const nextValue = !settings[key];
@@ -52,6 +136,39 @@ export default function NotificationSettings() {
 
       {isOpen && (
         <View style={styles.content}>
+          {Platform.OS !== 'web' && permissionStatus !== 'granted' && (
+            <View style={permissionStatus === 'denied' ? styles.deniedBanner : styles.warnBanner}>
+              <View style={styles.bannerHeader}>
+                <View style={styles.bannerTextContainer}>
+                  <Text style={permissionStatus === 'denied' ? styles.deniedBannerTitle : styles.warnBannerTitle}>
+                    {permissionStatus === 'denied' ? '기기 알림 권한이 차단되었습니다' : '기기 알림이 꺼져있습니다'}
+                  </Text>
+                  <Text style={permissionStatus === 'denied' ? styles.deniedBannerDesc : styles.warnBannerDesc}>
+                    {permissionStatus === 'denied' 
+                      ? '푸시 알림을 받으려면 휴대폰 설정에서 알림 권한을 허용해주세요.' 
+                      : '푸시 알림을 받으려면 기기 알림 권한을 허용해주세요.'}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={handleRequestMobilePermission}
+                  style={permissionStatus === 'denied' ? styles.deniedButton : styles.warnButton}
+                >
+                  <Text style={styles.buttonText}>권한 허용</Text>
+                </TouchableOpacity>
+              </View>
+
+              {showMobileGuide && permissionStatus === 'denied' && (
+                <View style={styles.guideContainer}>
+                  <Text style={styles.guideTitle}>🔓 알림 차단 해제 방법:</Text>
+                  <Text style={styles.guideStep}>1. 상단의 \'권한 허용\' 버튼을 눌러 \'설정으로 이동\'을 선택합니다.</Text>
+                  <Text style={styles.guideStep}>2. WeOrder 앱 설정 화면에서 \'알림\' 메뉴로 들어갑니다.</Text>
+                  <Text style={styles.guideStep}>3. \'알림 허용\' 스위치를 켜주세요.</Text>
+                </View>
+              )}
+            </View>
+          )}
+
           {/* 채팅 알림 */}
           <View style={styles.settingItem}>
             <View style={styles.settingTextContainer}>
@@ -93,6 +210,34 @@ export default function NotificationSettings() {
               thumbColor="#ffffff"
             />
           </View>
+
+          {/* 기기 알림 권한 상태 */}
+          {Platform.OS !== 'web' && (
+            <View style={[styles.settingItem, styles.borderTop]}>
+              <View style={styles.settingTextContainer}>
+                <Text style={styles.settingTitle}>기기 알림 권한 상태</Text>
+                <Text style={styles.settingDesc}>
+                  현재 OS의 알림 허용 상태입니다: {' '}
+                  <Text style={{ fontWeight: 'bold', color: permissionStatus === 'granted' ? '#10b981' : '#ef4444' }}>
+                    {permissionStatus === 'granted' ? '허용됨' : permissionStatus === 'denied' ? '차단됨' : '설정 필요'}
+                  </Text>
+                </Text>
+              </View>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => {
+                  if (permissionStatus === 'denied') {
+                    handleRequestMobilePermission();
+                  } else {
+                    Linking.openSettings();
+                  }
+                }}
+                style={permissionStatus === 'granted' ? styles.statusButtonActive : styles.statusButton}
+              >
+                <Text style={styles.statusButtonText}>설정 이동</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           {/* 저장 확인 메시지 */}
           {successMsg ? (
@@ -187,5 +332,101 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     color: '#059669',
+  },
+  warnBanner: {
+    backgroundColor: '#fffbeb',
+    borderColor: '#fef3c7',
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+  },
+  deniedBanner: {
+    backgroundColor: '#fff5f5',
+    borderColor: '#fed7d7',
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+  },
+  bannerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  bannerTextContainer: {
+    flex: 1,
+    marginRight: 8,
+  },
+  warnBannerTitle: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: '#92400e',
+    marginBottom: 2,
+  },
+  warnBannerDesc: {
+    fontSize: 11,
+    color: '#b45309',
+  },
+  deniedBannerTitle: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: '#9b2c2c',
+    marginBottom: 2,
+  },
+  deniedBannerDesc: {
+    fontSize: 11,
+    color: '#c53030',
+  },
+  warnButton: {
+    backgroundColor: '#d97706',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  deniedButton: {
+    backgroundColor: '#e53e3e',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  buttonText: {
+    color: '#ffffff',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  guideContainer: {
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#feb2b2',
+  },
+  guideTitle: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#9b2c2c',
+    marginBottom: 4,
+  },
+  guideStep: {
+    fontSize: 11,
+    color: '#c53030',
+    lineHeight: 16,
+  },
+  statusButton: {
+    backgroundColor: '#ef4444',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  statusButtonActive: {
+    backgroundColor: '#10b981',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  statusButtonText: {
+    color: '#ffffff',
+    fontSize: 11,
+    fontWeight: 'bold',
   },
 });
