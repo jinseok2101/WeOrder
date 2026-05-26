@@ -17,8 +17,9 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
 }
 
 export default function App() {
+  const { isAuthenticated, token, setUser } = useAuthStore();
+
   useEffect(() => {
-    const { token, isAuthenticated, setUser } = useAuthStore.getState();
     if (isAuthenticated && token) {
       connectSocket(token);
       
@@ -26,14 +27,14 @@ export default function App() {
       authApi.me()
         .then((user) => {
           setUser(user);
-          // 알림 권한 획득 및 PWA 푸시 구독 시도
-          if ('Notification' in window && Notification.permission === 'granted') {
+          // 알림 권한 획득 및 PWA 푸시 구독 시도 (차단되지 않은 경우 항상 최초 요청)
+          if ('Notification' in window && Notification.permission !== 'denied') {
             registerPushNotifications();
           }
         })
         .catch((err) => console.warn('프로필 동기화 실패:', err));
     }
-  }, []);
+  }, [isAuthenticated, token, setUser]);
 
   return (
     <BrowserRouter>

@@ -157,15 +157,6 @@ export default function NotificationSettings() {
                   <Text style={styles.buttonText}>권한 허용</Text>
                 </TouchableOpacity>
               </View>
-
-              {showMobileGuide && permissionStatus === 'denied' && (
-                <View style={styles.guideContainer}>
-                  <Text style={styles.guideTitle}>🔓 알림 차단 해제 방법:</Text>
-                  <Text style={styles.guideStep}>1. 상단의 \'권한 허용\' 버튼을 눌러 \'설정으로 이동\'을 선택합니다.</Text>
-                  <Text style={styles.guideStep}>2. WeOrder 앱 설정 화면에서 \'알림\' 메뉴로 들어갑니다.</Text>
-                  <Text style={styles.guideStep}>3. \'알림 허용\' 스위치를 켜주세요.</Text>
-                </View>
-              )}
             </View>
           )}
 
@@ -210,34 +201,6 @@ export default function NotificationSettings() {
               thumbColor="#ffffff"
             />
           </View>
-
-          {/* 기기 알림 권한 상태 */}
-          {Platform.OS !== 'web' && (
-            <View style={[styles.settingItem, styles.borderTop]}>
-              <View style={styles.settingTextContainer}>
-                <Text style={styles.settingTitle}>기기 알림 권한 상태</Text>
-                <Text style={styles.settingDesc}>
-                  현재 OS의 알림 허용 상태입니다: {' '}
-                  <Text style={{ fontWeight: 'bold', color: permissionStatus === 'granted' ? '#10b981' : '#ef4444' }}>
-                    {permissionStatus === 'granted' ? '허용됨' : permissionStatus === 'denied' ? '차단됨' : '설정 필요'}
-                  </Text>
-                </Text>
-              </View>
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => {
-                  if (permissionStatus === 'denied') {
-                    handleRequestMobilePermission();
-                  } else {
-                    Linking.openSettings();
-                  }
-                }}
-                style={permissionStatus === 'granted' ? styles.statusButtonActive : styles.statusButton}
-              >
-                <Text style={styles.statusButtonText}>설정 이동</Text>
-              </TouchableOpacity>
-            </View>
-          )}
 
           {/* 저장 확인 메시지 */}
           {successMsg ? (
