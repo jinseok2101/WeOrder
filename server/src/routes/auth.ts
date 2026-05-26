@@ -431,5 +431,46 @@ router.post('/social-signup', async (req, res) => {
   }
 });
 
+// 프로필 정보(닉네임) 변경 API
+router.patch('/me/profile', authenticate, async (req: AuthRequest, res) => {
+  try {
+    const { nickname } = req.body;
+    if (!nickname || typeof nickname !== 'string') {
+      return res.status(400).json({ message: '닉네임을 입력해 주세요.' });
+    }
+
+    const trimmed = nickname.trim();
+    if (!trimmed) {
+      return res.status(400).json({ message: '닉네임은 공백일 수 없습니다.' });
+    }
+
+    // 닉네임 중복 검사 (본인 제외)
+    const existing = await prisma.user.findUnique({ where: { nickname: trimmed } });
+    if (existing && existing.id !== req.userId) {
+      return res.status(409).json({ message: '이미 사용 중인 닉네임입니다.' });
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: req.userId },
+      data: { nickname: trimmed },
+      select: {
+        id: true,
+        email: true,
+        nickname: true,
+        tossId: true,
+        kakaoPayLink: true,
+        bankAccount: true,
+        notifyChat: true,
+        notifyRoomStatus: true,
+        notifySettlement: true,
+      },
+    });
+
+    res.json(updatedUser);
+  } catch (err) {
+    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+  }
+});
+
 export default router;
 

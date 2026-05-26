@@ -8,6 +8,7 @@ import Header from '../components/layout/Header';
 import BottomNav from '../components/layout/BottomNav';
 import RoomStatusBadge from '../components/room/RoomStatusBadge';
 import PaymentSettings from '../components/settlement/PaymentSettings';
+import ProfileSettings from '../components/settlement/ProfileSettings';
 import NotificationSettings from '../components/settlement/NotificationSettings';
 import { cn, formatCurrency, formatDate } from '../lib/utils';
 
@@ -66,6 +67,7 @@ export default function MyOrders() {
       <Header title="내 주문" showLogout showHome />
 
       <div className="px-4 pt-4 space-y-6">
+        <ProfileSettings />
         <PaymentSettings />
         <NotificationSettings />
         

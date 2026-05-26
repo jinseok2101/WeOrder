@@ -51,5 +51,7 @@ export const authApi = {
     api.get<{ available: boolean }>('/auth/check-nickname', { params: { nickname } }).then((r) => r.data),
   socialSignup: (data: { email: string; nickname: string; name?: string }) =>
     api.post<AuthResponse>('/auth/social-signup', data).then((r) => r.data),
+  updateProfile: (data: { nickname: string }) =>
+    api.patch<User>('/auth/me/profile', data).then((r) => r.data),
 };
 
