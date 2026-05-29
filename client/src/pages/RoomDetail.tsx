@@ -318,17 +318,17 @@ export default function RoomDetail() {
           <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-sm animate-in slide-in-from-top-4 duration-300">
             <div>
               <h3 className="text-sm font-bold text-emerald-800 flex items-center gap-1.5">
-                배달이 완료되었거나 진행 중인가요?
+                배달이 완료되었나요?
               </h3>
               <p className="text-xs text-emerald-600 mt-0.5">
-                음식을 안전하게 받으셨다면, 파티원들의 신뢰도를 평가하고 정산을 최종 마감해보세요.
+                음식을 안전하게 받으셨다면, 이웃들의 신뢰도를 평가하고 정산을 최종 마감해보세요.
               </p>
             </div>
             <button
               onClick={() => setIsReviewModalOpen(true)}
               className="w-full sm:w-auto text-xs bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-bold shadow-md transition-all active:scale-95 flex items-center justify-center gap-1 flex-shrink-0 cursor-pointer"
             >
-              음식 수령 & 파티원 평가하기
+              음식 수령 & 이웃 평가하기
             </button>
           </div>
         )}
@@ -384,7 +384,7 @@ export default function RoomDetail() {
                 🛵 배달 도착 알림 제어
               </h3>
               <p className="text-xs text-amber-600 mt-0.5">
-                파티원들에게 배달 도착 예정 소식을 실시간 알림 및 푸시로 보냅니다.
+                이웃들에게 배달 도착 예정 소식을 실시간 알림 및 푸시로 보냅니다.
               </p>
             </div>
             <div className="grid grid-cols-3 gap-2">

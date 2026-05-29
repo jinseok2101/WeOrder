@@ -55,7 +55,7 @@ router.patch('/:id/shares/:userId/paid', authenticate, async (req: AuthRequest, 
         [room.hostId],
         {
           title: `💸 입금 완료 알림`,
-          body: `${user?.nickname || '파티원'}님이 '${room.restaurantName}' 배달비 송금을 완료하셨습니다.`,
+          body: `${user?.nickname || '이웃'}님이 '${room.restaurantName}' 배달비 송금을 완료하셨습니다.`,
           data: { roomId: settlement!.roomId, type: 'settlement' }
         },
         'settlement'

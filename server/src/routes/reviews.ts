@@ -15,7 +15,7 @@ router.post('/rooms/:roomId/reviews', authenticate, async (req: AuthRequest, res
     const { reviews } = req.body; // 배열 형태: [{ revieweeId: string; rating: number; tags: string[]; comment?: string; }]
 
     if (!Array.isArray(reviews) || reviews.length === 0) {
-      return res.status(400).json({ message: '평가할 파티원 정보가 필요합니다.' });
+      return res.status(400).json({ message: '평가할 이웃 정보가 필요합니다.' });
     }
 
     // 방 조회 및 검증
@@ -71,7 +71,7 @@ router.post('/rooms/:roomId/reviews', authenticate, async (req: AuthRequest, res
       });
 
       if (existingReview) {
-        return res.status(400).json({ message: '이미 평가를 완료한 파티원입니다.' });
+        return res.status(400).json({ message: '이미 평가를 완료한 이웃입니다.' });
       }
 
       // 10점 만점 기준 점수로 환산 (예: 별점 4.5 ➡️ 9.0점, 별점 5.0 ➡️ 10.0점)

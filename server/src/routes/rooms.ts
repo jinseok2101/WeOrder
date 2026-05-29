@@ -328,7 +328,7 @@ router.post('/:id/leave', authenticate, async (req: AuthRequest, res) => {
       where: { roomId_userId: { roomId: id, userId } },
     });
 
-    // 파티원이 나갈 때 해당 파티원의 주문 메뉴도 함께 삭제
+    // 이웃이 나갈 때 해당 이웃의 주문 메뉴도 함께 삭제
     await prisma.orderItem.deleteMany({
       where: { roomId: id, userId },
     });

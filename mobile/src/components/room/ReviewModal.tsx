@@ -127,9 +127,9 @@ export default function ReviewModal({
           {/* 헤더 */}
           <View style={styles.header}>
             <View>
-              <Text style={styles.headerTitle}>파티원 매너 평가하기</Text>
+              <Text style={styles.headerTitle}>이웃 매너 평가하기</Text>
               <Text style={styles.headerSubtitle}>
-                배달 파티원들의 신뢰도를 매겨주세요.
+                배달 이웃들의 신뢰도를 매겨주세요.
               </Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>

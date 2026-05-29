@@ -403,17 +403,17 @@ export default function RoomDetailScreen() {
             <View className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 gap-3 flex-col sm:flex-row items-center justify-between">
               <View className="flex-1 mr-2 w-full">
                 <Text className="text-sm font-bold text-emerald-800">
-                  배달이 완료되었거나 진행 중인가요?
+                  배달이 완료되었나요?
                 </Text>
                 <Text className="text-xs text-emerald-600 mt-1" numberOfLines={2}>
-                  음식을 안전하게 받으셨다면, 파티원들의 신뢰도를 평가하고 정산을 최종 마감해보세요.
+                  음식을 안전하게 받으셨다면, 이웃들의 신뢰도를 평가하고 정산을 최종 마감해보세요.
                 </Text>
               </View>
               <TouchableOpacity
                 onPress={() => setIsReviewModalOpen(true)}
                 className="bg-emerald-500 px-4 py-2.5 rounded-xl shadow-sm active:opacity-70 mt-2 w-full items-center"
               >
-                <Text className="text-white text-xs font-bold">음식 수령 & 파티원 평가하기</Text>
+                <Text className="text-white text-xs font-bold">음식 수령 & 이웃 평가하기</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -472,7 +472,7 @@ export default function RoomDetailScreen() {
                   🛵 배달 도착 알림 제어
                 </Text>
                 <Text className="text-xs text-amber-600 mt-0.5">
-                  파티원들에게 배달 도착 예정 소식을 실시간 알림 및 푸시로 보냅니다.
+                  이웃들에게 배달 도착 예정 소식을 실시간 알림 및 푸시로 보냅니다.
                 </Text>
               </View>
               <View className="flex-row gap-2">

@@ -125,7 +125,7 @@ export default function UserProfileModal({ isOpen, onClose, userId }: UserProfil
                 <View style={styles.section}>
                   <View style={styles.sectionHeader}>
                     <MessageSquare size={16} color="#ea580c" />
-                    <Text style={styles.sectionHeaderText}>파티원들의 한 줄 코멘트</Text>
+                    <Text style={styles.sectionHeaderText}>이웃들의 한 줄 코멘트</Text>
                   </View>
 
                   {profile.comments.length === 0 ? (

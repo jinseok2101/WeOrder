@@ -136,7 +136,7 @@ export default function UserProfileModal({ isOpen, onClose, userId }: UserProfil
               <div className="space-y-3">
                 <h5 className="text-sm font-bold text-gray-800 flex items-center gap-1.5">
                   <MessageSquare size={16} className="text-primary-500" />
-                  파티원들의 한 줄 코멘트
+                  이웃들의 한 줄 코멘트
                 </h5>
 
                 {profile.comments.length === 0 ? (
