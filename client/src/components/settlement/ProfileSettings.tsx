@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User as UserIcon, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
+import { User as UserIcon, CheckCircle2, ChevronDown, ChevronUp, Star } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { authApi } from '../../api/auth';
 import { useMutation } from '@tanstack/react-query';
@@ -59,7 +59,7 @@ export default function ProfileSettings() {
       >
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
-            <span className="text-lg">⭐</span>
+            <Star size={20} className="text-amber-600 fill-amber-500" />
           </div>
           <div>
             <span className="text-[10px] font-bold text-amber-800 tracking-wider block">나의 신뢰 등급</span>

@@ -318,17 +318,17 @@ export default function RoomDetail() {
           <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-sm animate-in slide-in-from-top-4 duration-300">
             <div>
               <h3 className="text-sm font-bold text-emerald-800 flex items-center gap-1.5">
-                🎉 배달 파티 정산이 완료되었습니다!
+                배달이 완료되었거나 진행 중인가요?
               </h3>
               <p className="text-xs text-emerald-600 mt-0.5">
-                함께한 파티원들의 매너와 신뢰도를 평가하고 별점을 나누어보세요.
+                음식을 안전하게 받으셨다면, 파티원들의 신뢰도를 평가하고 정산을 최종 마감해보세요.
               </p>
             </div>
             <button
               onClick={() => setIsReviewModalOpen(true)}
               className="w-full sm:w-auto text-xs bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-bold shadow-md transition-all active:scale-95 flex items-center justify-center gap-1 flex-shrink-0 cursor-pointer"
             >
-              ⭐ 파티원 평가하기
+              음식 수령 & 파티원 평가하기
             </button>
           </div>
         )}
@@ -413,7 +413,7 @@ export default function RoomDetail() {
                 }}
                 className="bg-amber-500 hover:bg-amber-600 text-white text-xs py-2.5 px-1 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-1 shadow-md active:scale-95 duration-100"
               >
-                <span className="text-base">🎉 도착 완료!</span>
+                <span className="text-base">도착 완료!</span>
               </button>
             </div>
           </div>

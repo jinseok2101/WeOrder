@@ -68,13 +68,22 @@ export default function MyOrdersScreen() {
   });
 
   const now = Date.now();
-  const active = rooms.filter((r) => {
+  const ongoing = rooms.filter((r) => {
     const isExpired = new Date(r.deadline).getTime() < now;
-    return ['OPEN', 'ORDERING', 'ORDERED'].includes(r.status) && !isExpired;
+    return ['OPEN', 'ORDERING'].includes(r.status) && !isExpired;
+  });
+  const delivering = rooms.filter((r) => {
+    const hasReviewed = r.reviews && r.reviews.length > 0;
+    return r.status === 'ORDERED' || (r.status === 'SETTLED' && !hasReviewed);
   });
   const past = rooms.filter((r) => {
     const isExpired = new Date(r.deadline).getTime() < now;
-    return ['SETTLED', 'CANCELLED'].includes(r.status) || isExpired;
+    const hasReviewed = r.reviews && r.reviews.length > 0;
+    return (
+      r.status === 'CANCELLED' ||
+      (r.status === 'SETTLED' && hasReviewed) ||
+      ((r.status === 'OPEN' || r.status === 'ORDERING') && isExpired)
+    );
   });
 
   return (
@@ -117,18 +126,18 @@ export default function MyOrdersScreen() {
         
         <View className="mb-6">
           <Text className="font-bold text-gray-700 text-sm mb-3">
-            진행 중 {active.length > 0 && <Text className="text-primary-500">({active.length})</Text>}
+            진행 중 {ongoing.length > 0 && <Text className="text-primary-500">({ongoing.length})</Text>}
           </Text>
 
           {isLoading ? (
             <ActivityIndicator size="large" color="#f97316" />
-          ) : active.length === 0 ? (
+          ) : ongoing.length === 0 ? (
             <View className="bg-white rounded-2xl border border-gray-100 p-6 items-center">
               <Text className="text-sm text-gray-400">진행 중인 주문이 없어요</Text>
             </View>
           ) : (
             <View className="gap-3">
-              {active.map((room) => (
+              {ongoing.map((room) => (
                 <TouchableOpacity
                   key={room.id}
                   onPress={() => navigation.navigate('RoomDetail', { id: room.id })}
@@ -151,6 +160,59 @@ export default function MyOrdersScreen() {
                       <Clock size={11} color="#9ca3af" />
                       <Text className="text-xs text-gray-400">{formatDate(room.deadline)}</Text>
                     </View>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
+
+        <View className="mb-6">
+          <Text className="font-bold text-gray-700 text-sm mb-3">
+            배달 및 정산 중 {delivering.length > 0 && <Text className="text-amber-500 font-extrabold">({delivering.length})</Text>}
+          </Text>
+
+          {isLoading ? (
+            <ActivityIndicator size="large" color="#f59e0b" />
+          ) : delivering.length === 0 ? (
+            <View className="bg-white rounded-2xl border border-gray-100 p-6 items-center">
+              <Text className="text-sm text-gray-400">배달 또는 정산 진행 중인 주문이 없어요</Text>
+            </View>
+          ) : (
+            <View className="gap-3">
+              {delivering.map((room) => (
+                <TouchableOpacity
+                  key={room.id}
+                  onPress={() => navigation.navigate('RoomDetail', { id: room.id })}
+                  activeOpacity={0.7}
+                  className="w-full bg-white rounded-2xl border border-amber-100 p-4 relative overflow-hidden"
+                >
+                  <View className="absolute left-0 top-0 bottom-0 w-1 bg-amber-500" />
+                  <View className="flex-row items-start justify-between gap-2 pl-1.5">
+                    <View className="flex-1">
+                      <View className="flex-row items-center gap-2 mb-1 flex-wrap">
+                        <RoomStatusBadge status={room.status} deadline={room.deadline} />
+                        {room.status === 'SETTLED' && (
+                          <View className="bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100">
+                            <Text className="text-[10px] font-bold text-amber-700">평가 대기</Text>
+                          </View>
+                        )}
+                      </View>
+                      <Text className="font-bold text-gray-900" numberOfLines={1}>{room.restaurantName}</Text>
+                      <Text className="text-sm text-gray-500 mt-0.5" numberOfLines={1}>{room.title}</Text>
+                    </View>
+                    <ChevronRight size={18} color="#d1d5db" />
+                  </View>
+                  <View className="mt-2 flex-row items-center justify-between pl-1.5">
+                    <SettlementIndicator room={room} userId={user!.id} />
+                    {room.status === 'SETTLED' ? (
+                      <Text className="text-[11px] font-medium text-amber-600">음식 수령 & 평가 시 마감</Text>
+                    ) : (
+                      <View className="flex-row items-center gap-1 ml-auto">
+                        <Clock size={11} color="#9ca3af" />
+                        <Text className="text-xs text-gray-400">{formatDate(room.deadline)}</Text>
+                      </View>
+                    )}
                   </View>
                 </TouchableOpacity>
               ))}

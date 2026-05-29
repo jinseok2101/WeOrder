@@ -400,20 +400,20 @@ export default function RoomDetailScreen() {
 
           {/* 리뷰 작성 권장 배너 카드 */}
           {room.status === 'SETTLED' && isMember && !hasReviewed && (
-            <View className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 gap-3 flex-row items-center justify-between">
-              <View className="flex-1 mr-2">
+            <View className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 gap-3 flex-col sm:flex-row items-center justify-between">
+              <View className="flex-1 mr-2 w-full">
                 <Text className="text-sm font-bold text-emerald-800">
-                  🎉 배달 정산 완료!
+                  배달이 완료되었거나 진행 중인가요?
                 </Text>
-                <Text className="text-xs text-emerald-600 mt-0.5" numberOfLines={2}>
-                  함께한 파티원들의 매너와 신뢰 별점을 평가하고 나누어보세요.
+                <Text className="text-xs text-emerald-600 mt-1" numberOfLines={2}>
+                  음식을 안전하게 받으셨다면, 파티원들의 신뢰도를 평가하고 정산을 최종 마감해보세요.
                 </Text>
               </View>
               <TouchableOpacity
                 onPress={() => setIsReviewModalOpen(true)}
-                className="bg-emerald-500 px-3.5 py-2.5 rounded-xl shadow-sm active:opacity-70"
+                className="bg-emerald-500 px-4 py-2.5 rounded-xl shadow-sm active:opacity-70 mt-2 w-full items-center"
               >
-                <Text className="text-white text-xs font-bold">별점 평가</Text>
+                <Text className="text-white text-xs font-bold">음식 수령 & 파티원 평가하기</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -501,7 +501,7 @@ export default function RoomDetailScreen() {
                   }}
                   className="flex-1 bg-amber-500 py-3 rounded-xl items-center justify-center gap-1 shadow-md active:opacity-75"
                 >
-                  <Text className="text-sm font-bold text-white">🎉 도착 완료!</Text>
+                  <Text className="text-sm font-bold text-white">도착 완료!</Text>
                 </TouchableOpacity>
               </View>
             </View>

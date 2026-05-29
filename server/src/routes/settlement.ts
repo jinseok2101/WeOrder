@@ -114,7 +114,7 @@ router.patch('/:id/shares/:userId/confirm', authenticate, async (req: AuthReques
       notificationService.sendPushNotification(
         [settlement.room.hostId],
         {
-          title: `🎉 정산 최종 완료!`,
+          title: `정산 최종 완료!`,
           body: `'${settlement.room.restaurantName}' 방의 모든 멤버가 송금을 완료하여 정산이 성공적으로 끝났습니다!`,
           data: { roomId: settlement.roomId, type: 'settlement' }
         },

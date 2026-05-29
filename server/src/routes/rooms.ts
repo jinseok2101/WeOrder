@@ -115,6 +115,9 @@ router.get('/mine', authenticate, async (req: AuthRequest, res) => {
             host: { select: { id: true, nickname: true } },
             members: true,
             settlement: { include: { shares: true } },
+            reviews: {
+              where: { reviewerId: req.userId }
+            }
           },
         },
       },
@@ -293,7 +296,7 @@ router.post('/:id/join', authenticate, async (req: AuthRequest, res) => {
       notificationService.sendPushNotification(
         [room.hostId],
         {
-          title: `🎉 WeOrder 배달방 새 멤버`,
+          title: `WeOrder 배달방 새 멤버`,
           body: `${user?.nickname || '새 참가자'}님이 '${room.restaurantName}' 방에 참가하셨습니다!`,
           data: { roomId: id, type: 'roomStatus' }
         },

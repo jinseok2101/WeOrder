@@ -119,7 +119,7 @@ export default function ReviewModal({
         <div className="flex items-center justify-between p-6 border-b border-gray-100 flex-shrink-0">
           <div>
             <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-              🎉 파티원 매너 평가하기
+              파티원 매너 평가하기
             </h2>
             <p className="text-xs text-gray-400 mt-1">
               이번 배달 파티는 어떠셨나요? 함께한 분들의 신뢰도를 매겨주세요.

@@ -94,6 +94,7 @@ export interface Room {
   totalMenuAmount?: number;
   achievementRate?: number;
   isMinimumMet?: boolean;
+  reviews?: any[];
 }
 
 export interface ChatMessage {
