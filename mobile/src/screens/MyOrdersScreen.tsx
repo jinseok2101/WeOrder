@@ -95,14 +95,27 @@ export default function MyOrdersScreen() {
         <TouchableOpacity
           onPress={() => setIsProfileModalOpen(true)}
           activeOpacity={0.8}
-          className="bg-amber-50/50 border border-amber-100 rounded-2xl p-4 flex-row items-center justify-between mb-6 shadow-sm"
+          style={{
+            backgroundColor: 'rgba(255, 251, 235, 0.5)',
+            borderColor: '#fef3c7',
+            borderWidth: 1,
+          }}
+          className="rounded-2xl p-4 flex-row items-center justify-between mb-6 shadow-sm"
         >
           <View className="flex-row items-center gap-3">
-            <View className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+            <View
+              style={{ backgroundColor: '#fef3c7' }}
+              className="w-10 h-10 rounded-full flex items-center justify-center"
+            >
               <Star size={20} color="#d97706" fill="#d97706" />
             </View>
             <View>
-              <Text className="text-[10px] font-extrabold text-amber-800 tracking-wider">나의 신뢰 등급</Text>
+              <Text
+                style={{ color: '#92400e' }}
+                className="text-[10px] font-extrabold tracking-wider"
+              >
+                나의 신뢰 등급
+              </Text>
               <View className="flex-row items-center gap-1.5 mt-0.5">
                 <Text className="text-base font-extrabold text-gray-900">
                   {((user?.trustScore ?? 10) / 2).toFixed(1)}
@@ -115,7 +128,12 @@ export default function MyOrdersScreen() {
             </View>
           </View>
           <View className="flex-row items-center gap-1">
-            <Text className="text-xs text-amber-900 font-bold">내 프로필 보기</Text>
+            <Text
+              style={{ color: '#78350f' }}
+              className="text-xs font-bold"
+            >
+              내 프로필 보기
+            </Text>
             <ChevronRight size={16} color="#d97706" />
           </View>
         </TouchableOpacity>
