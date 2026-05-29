@@ -50,11 +50,12 @@ export async function createSettlement(roomId: string, hostId: string) {
             menuAmount,
             deliverySplit,
             totalAmount: menuAmount + deliverySplit,
-            status: 'REQUESTED' as const,
+            status: isHost ? ('CONFIRMED' as const) : ('REQUESTED' as const),
           };
         }),
       },
     },
+
     include: {
       shares: {
         include: {
