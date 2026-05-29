@@ -20,6 +20,8 @@ import BottomNav from "../components/layout/BottomNav";
 import RoomCard from "../components/room/RoomCard";
 import { cn } from "../lib/utils";
 import { addressesApi, UserAddress } from "../api/addresses";
+import MannerStars from "../components/room/MannerStars";
+import UserProfileModal from "../components/room/UserProfileModal";
 
 // 반경 필터 기능 제거
 
@@ -33,6 +35,8 @@ export default function Home() {
     setLocation,
   } = useGeolocation();
   const [search, setSearch] = useState("");
+  const [isUserProfileModalOpen, setIsUserProfileModalOpen] = useState(false);
+  const [selectedProfileUserId, setSelectedProfileUserId] = useState<string | null>(null);
   const [roadAddress, setRoadAddress] = useState("");
   const [jibunAddress, setJibunAddress] = useState("");
   const [dongName, setDongName] = useState("");
@@ -386,10 +390,24 @@ export default function Home() {
       <Header title="WeOrder" showLogout showHome />
 
       <div className="px-4 pt-4 pb-2">
-        <div className="flex items-center gap-2 mb-3 px-1">
-          <p className="font-medium text-gray-800 text-[15px]">
-            안녕하세요,{" "}
-            <span className="text-primary-600">{user?.nickname}</span>님!
+        <div className="flex items-center gap-2 mb-3 px-1 flex-wrap">
+          <p className="font-medium text-gray-800 text-[15px] flex items-center gap-1.5 flex-wrap">
+            <span>안녕하세요,</span>
+            <button
+              onClick={() => {
+                if (user?.id) {
+                  setSelectedProfileUserId(user.id);
+                  setIsUserProfileModalOpen(true);
+                }
+              }}
+              className="text-primary-600 font-bold hover:underline cursor-pointer transition-colors"
+            >
+              {user?.nickname}
+            </button>
+            <span>님!</span>
+            {user?.trustScore !== undefined && (
+              <MannerStars rating={user.trustScore / 2} size={13} showText={true} />
+            )}
           </p>
         </div>
 
@@ -562,6 +580,18 @@ export default function Home() {
       </div>
 
       <BottomNav />
+
+      {/* 내 신뢰도 프로필 팝업 모달 */}
+      {selectedProfileUserId && (
+        <UserProfileModal
+          isOpen={isUserProfileModalOpen}
+          onClose={() => {
+            setIsUserProfileModalOpen(false);
+            setSelectedProfileUserId(null);
+          }}
+          userId={selectedProfileUserId}
+        />
+      )}
     </div>
   );
 }

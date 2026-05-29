@@ -79,7 +79,8 @@ router.get('/me', authenticate, async (req: AuthRequest, res) => {
       select: { 
         id: true, email: true, nickname: true, latitude: true, longitude: true,
         tossId: true, kakaoPayLink: true, bankAccount: true,
-        notifyChat: true, notifyRoomStatus: true, notifySettlement: true
+        notifyChat: true, notifyRoomStatus: true, notifySettlement: true,
+        trustScore: true, reviewCount: true
       },
     });
     if (!user) return res.status(404).json({ message: '사용자를 찾을 수 없습니다.' });

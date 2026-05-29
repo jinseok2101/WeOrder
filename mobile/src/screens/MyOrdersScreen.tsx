@@ -2,7 +2,8 @@ import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigation } from '@react-navigation/native';
-import { Clock, ChevronRight, CheckCircle2, AlertCircle } from 'lucide-react-native';
+import { Clock, ChevronRight, CheckCircle2, AlertCircle, Star } from 'lucide-react-native';
+import UserProfileModal from '../components/room/UserProfileModal';
 
 import { roomsApi } from '../api/rooms';
 import { Room } from '../types';
@@ -12,6 +13,7 @@ import BottomNav from '../components/layout/BottomNav';
 import RoomStatusBadge from '../components/room/RoomStatusBadge';
 import PaymentSettings from '../components/settlement/PaymentSettings';
 import NotificationSettings from '../components/settlement/NotificationSettings';
+import ProfileSettings from '../components/settlement/ProfileSettings';
 import { formatCurrency, formatDate } from '../lib/utils';
 
 function SettlementIndicator({ room, userId }: { room: Room; userId: string }) {
@@ -48,6 +50,7 @@ function SettlementIndicator({ room, userId }: { room: Room; userId: string }) {
 export default function MyOrdersScreen() {
   const navigation = useNavigation<any>();
   const user = useAuthStore((s) => s.user);
+  const [isProfileModalOpen, setIsProfileModalOpen] = React.useState(false);
 
   const { data: rooms = [], isLoading } = useQuery({
     queryKey: ['rooms', 'mine'],
@@ -69,6 +72,36 @@ export default function MyOrdersScreen() {
       <Header title="내 주문" showLogout showHome />
 
       <ScrollView className="px-4 pt-4" contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+        {/* 나의 신뢰도 프로필 보기 카드 */}
+        <TouchableOpacity
+          onPress={() => setIsProfileModalOpen(true)}
+          activeOpacity={0.8}
+          className="bg-amber-50/50 border border-amber-100 rounded-2xl p-4 flex-row items-center justify-between mb-6 shadow-sm"
+        >
+          <View className="flex-row items-center gap-3">
+            <View className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+              <Star size={20} color="#d97706" fill="#d97706" />
+            </View>
+            <View>
+              <Text className="text-[10px] font-extrabold text-amber-800 tracking-wider">나의 신뢰 등급</Text>
+              <View className="flex-row items-center gap-1.5 mt-0.5">
+                <Text className="text-base font-extrabold text-gray-900">
+                  {((user?.trustScore ?? 10) / 2).toFixed(1)}
+                </Text>
+                <Text className="text-[11px] text-gray-400 font-bold">/ 5.0</Text>
+                <Text className="text-xs text-gray-400 font-semibold ml-1">
+                  ({user?.reviewCount ?? 0}회 평가)
+                </Text>
+              </View>
+            </View>
+          </View>
+          <View className="flex-row items-center gap-1">
+            <Text className="text-xs text-amber-900 font-bold">내 프로필 보기</Text>
+            <ChevronRight size={16} color="#d97706" />
+          </View>
+        </TouchableOpacity>
+
+        <ProfileSettings />
         <PaymentSettings />
         <NotificationSettings />
         
@@ -153,6 +186,13 @@ export default function MyOrdersScreen() {
       </ScrollView>
 
       <BottomNav />
+      {user && (
+        <UserProfileModal
+          isOpen={isProfileModalOpen}
+          onClose={() => setIsProfileModalOpen(false)}
+          userId={user.id}
+        />
+      )}
     </View>
   );
 }

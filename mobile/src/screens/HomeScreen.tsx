@@ -21,6 +21,8 @@ import Header from "../components/layout/Header";
 import BottomNav from "../components/layout/BottomNav";
 import RoomCard from "../components/room/RoomCard";
 import MapComponent from "../components/map/MapComponent";
+import MannerStars from "../components/room/MannerStars";
+import UserProfileModal from "../components/room/UserProfileModal";
 
 export default function HomeScreen() {
   const navigation = useNavigation<any>();
@@ -34,6 +36,8 @@ export default function HomeScreen() {
   } = useGeolocation();
 
   const [search, setSearch] = useState("");
+  const [isUserProfileModalOpen, setIsUserProfileModalOpen] = useState(false);
+  const [selectedProfileUserId, setSelectedProfileUserId] = useState<string | null>(null);
   const [savedAddresses, setSavedAddresses] = useState<UserAddress[]>([]);
   const [roadAddress, setRoadAddress] = useState("위치 조회 중...");
   const [jibunAddress, setJibunAddress] = useState("");
@@ -236,11 +240,26 @@ export default function HomeScreen() {
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <View className="px-4 pt-4 pb-2">
-          <View className="flex-row items-center gap-2 mb-3 px-1">
-            <Text className="font-medium text-gray-800 text-[15px]">
-              안녕하세요,{" "}
-              <Text className="text-primary-600">{user?.nickname}</Text>님!
+          <View className="flex-row items-center gap-2 mb-3 px-1 flex-wrap">
+            <Text className="font-medium text-gray-800 text-[15px] flex-row items-center flex-wrap">
+              <Text className="text-gray-800">안녕하세요, </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  if (user?.id) {
+                    setSelectedProfileUserId(user.id);
+                    setIsUserProfileModalOpen(true);
+                  }
+                }}
+              >
+                <Text className="text-primary-600 font-bold underline">
+                  {user?.nickname}
+                </Text>
+              </TouchableOpacity>
+              <Text className="text-gray-800">님!</Text>
             </Text>
+            {user?.trustScore !== undefined && (
+              <MannerStars rating={user.trustScore / 2} size={13} showText={true} />
+            )}
           </View>
 
           <View className="rounded-2xl overflow-hidden bg-white mb-4">
@@ -480,6 +499,18 @@ export default function HomeScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* 내 신뢰도 프로필 팝업 모달 */}
+      {selectedProfileUserId && (
+        <UserProfileModal
+          isOpen={isUserProfileModalOpen}
+          onClose={() => {
+            setIsUserProfileModalOpen(false);
+            setSelectedProfileUserId(null);
+          }}
+          userId={selectedProfileUserId}
+        />
+      )}
     </View>
   );
 }

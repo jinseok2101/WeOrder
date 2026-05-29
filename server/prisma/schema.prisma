@@ -24,6 +24,10 @@ model User {
   notifyRoomStatus   Boolean @default(true)
   notifySettlement   Boolean @default(true)
   
+  // 신뢰 점수 및 리뷰 설정 (10점 만점)
+  trustScore         Float   @default(10.0)
+  reviewCount        Int     @default(0)
+  
   createdAt    DateTime @default(now())
 
   hostedRooms       Room[]            @relation("RoomHost")
@@ -33,6 +37,8 @@ model User {
   chatMessages      ChatMessage[]
   addresses         UserAddress[]
   pushSubscriptions PushSubscription[]
+  reviewsGiven      UserReview[]      @relation("Reviewer")
+  reviewsReceived   UserReview[]      @relation("Reviewee")
 }
 
 model UserAddress {
@@ -70,6 +76,7 @@ model Room {
   orderItems   OrderItem[]
   settlement   Settlement?
   chatMessages ChatMessage[]
+  reviews      UserReview[]
 }
 
 enum RoomStatus {
@@ -169,4 +176,20 @@ model PushSubscription {
   p256dh    String?  // Web Push 암호화용 퍼블릭 키 (WEB 전용)
   auth      String?  // Web Push 암호화용 인증 키 (WEB 전용)
   createdAt DateTime @default(now())
+}
+
+model UserReview {
+  id          String   @id @default(cuid())
+  reviewerId  String
+  reviewer    User     @relation("Reviewer", fields: [reviewerId], references: [id])
+  revieweeId  String
+  reviewee    User     @relation("Reviewee", fields: [revieweeId], references: [id])
+  roomId      String
+  room        Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  rating      Float    // 0.5 ~ 5.0 (0.5 단위)
+  tags        String[] // 선택된 평가 태그 목록
+  comment     String?  // 한줄평 (선택)
+  createdAt   DateTime @default(now())
+
+  @@unique([roomId, reviewerId, revieweeId])
 }

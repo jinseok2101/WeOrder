@@ -7,6 +7,7 @@ import roomsRouter from './routes/rooms';
 import ordersRouter from './routes/orders';
 import settlementRouter from './routes/settlement';
 import addressesRouter from './routes/addresses';
+import reviewsRouter from './routes/reviews';
 
 const app = express();
 
@@ -35,5 +36,6 @@ app.use('/api/rooms', roomsRouter);
 app.use('/api/orders', ordersRouter);
 app.use('/api/settlement', settlementRouter);
 app.use('/api/addresses', addressesRouter);
+app.use('/api', reviewsRouter);
 
 export default app;

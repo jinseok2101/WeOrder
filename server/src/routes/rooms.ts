@@ -10,19 +10,19 @@ const router = Router();
 
 function roomDetailInclude() {
   return {
-    host: { select: { id: true, nickname: true, tossId: true, kakaoPayLink: true, bankAccount: true } },
+    host: { select: { id: true, nickname: true, tossId: true, kakaoPayLink: true, bankAccount: true, trustScore: true, reviewCount: true } },
     members: {
-      include: { user: { select: { id: true, nickname: true } } },
+      include: { user: { select: { id: true, nickname: true, trustScore: true, reviewCount: true } } },
       orderBy: { joinedAt: 'asc' as const },
     },
     orderItems: {
-      include: { user: { select: { id: true, nickname: true } } },
+      include: { user: { select: { id: true, nickname: true, trustScore: true, reviewCount: true } } },
       orderBy: { createdAt: 'asc' as const },
     },
     settlement: {
       include: {
         shares: {
-          include: { user: { select: { id: true, nickname: true } } },
+          include: { user: { select: { id: true, nickname: true, trustScore: true, reviewCount: true } } },
           orderBy: { totalAmount: 'desc' as const },
         },
       },

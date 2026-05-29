@@ -25,6 +25,9 @@ export const authApi = {
     api.patch<User>('/auth/me/payment', data).then((r) => r.data),
   updateNotifications: (data: { notifyChat?: boolean; notifyRoomStatus?: boolean; notifySettlement?: boolean }) =>
     api.patch<User>('/auth/me/notifications', data).then((r) => r.data),
+  updateProfile: (data: { nickname: string }) =>
+    api.patch<User>('/auth/me/profile', data).then((r) => r.data),
+
   subscribePush: (data: { type: string; endpoint: string; p256dh?: string | null; auth?: string | null }) =>
     api.post('/auth/me/push-subscription', data).then((r) => r.data),
   unsubscribePush: (data: { endpoint: string }) =>

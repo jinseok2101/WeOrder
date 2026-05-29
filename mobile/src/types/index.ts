@@ -15,13 +15,15 @@ export interface User {
   notifyChat?: boolean;
   notifyRoomStatus?: boolean;
   notifySettlement?: boolean;
+  trustScore?: number;
+  reviewCount?: number;
 }
 
 export interface RoomMember {
   id: string;
   roomId: string;
   userId: string;
-  user: { id: string; nickname: string };
+  user: { id: string; nickname: string; trustScore?: number; reviewCount?: number };
   joinedAt: string;
 }
 
@@ -29,7 +31,7 @@ export interface OrderItem {
   id: string;
   roomId: string;
   userId: string;
-  user: { id: string; nickname: string };
+  user: { id: string; nickname: string; trustScore?: number; reviewCount?: number };
   name: string;
   price: number;
   quantity: number;
@@ -41,7 +43,7 @@ export interface SettlementShare {
   id: string;
   settlementId: string;
   userId: string;
-  user: { id: string; nickname: string };
+  user: { id: string; nickname: string; trustScore?: number; reviewCount?: number };
   menuAmount: number;
   deliverySplit: number;
   totalAmount: number;
@@ -72,6 +74,8 @@ export interface Room {
     tossId?: string | null;
     kakaoPayLink?: string | null;
     bankAccount?: string | null;
+    trustScore?: number;
+    reviewCount?: number;
   };
   deliveryFee: number;
   minimumOrder: number;
@@ -96,7 +100,7 @@ export interface ChatMessage {
   id: string;
   roomId?: string;
   userId?: string | null;
-  user?: { id: string; nickname: string } | null;
+  user?: { id: string; nickname: string; trustScore?: number; reviewCount?: number } | null;
   content: string;
   type: MessageType;
   createdAt: string;

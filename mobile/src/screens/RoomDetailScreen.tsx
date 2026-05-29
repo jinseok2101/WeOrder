@@ -33,6 +33,10 @@ import MemberOrderList from "../components/order/MemberOrderList";
 import SettlementSummary from "../components/settlement/SettlementSummary";
 import { formatCurrency, formatDate } from "../lib/utils";
 import { ChatMessage, Room } from "../types";
+import MannerStars from "../components/room/MannerStars";
+import ReviewModal from "../components/room/ReviewModal";
+import UserProfileModal from "../components/room/UserProfileModal";
+import { reviewsApi } from "../api/reviews";
 
 type Tab = "order" | "chat" | "settlement";
 
@@ -48,6 +52,11 @@ export default function RoomDetailScreen() {
   const [tab, setTab] = useState<Tab>("order");
   const [chatInput, setChatInput] = useState("");
   const scrollViewRef = useRef<ScrollView>(null);
+
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [isUserProfileModalOpen, setIsUserProfileModalOpen] = useState(false);
+  const [selectedProfileUserId, setSelectedProfileUserId] = useState<string | null>(null);
+  const [hasReviewed, setHasReviewed] = useState(true);
 
   const { data: room, isLoading } = useQuery({
     queryKey: ["room", id],
@@ -66,6 +75,13 @@ export default function RoomDetailScreen() {
     if (!id) return;
     roomsApi.getChat(id).then((msgs: ChatMessage[]) => setMessages(msgs));
   }, [id, setMessages]);
+
+  useEffect(() => {
+    const isRoomMember = (room?.members || []).some((m) => m.userId === user?.id);
+    if (id && room?.status === 'SETTLED' && isRoomMember) {
+      reviewsApi.getReviewStatus(id).then((data) => setHasReviewed(data.hasReviewed));
+    }
+  }, [id, room?.status, room?.members, user?.id]);
 
   useEffect(() => {
     if (tab === "chat") {
@@ -334,9 +350,21 @@ export default function RoomDetailScreen() {
                 <Text className="font-bold text-gray-900 text-lg mt-1">
                   {room.title}
                 </Text>
-                <Text className="text-xs text-gray-400 mt-0.5">
-                  방장: {room.host.nickname} · 마감 {formatDate(room.deadline)}
-                </Text>
+                <View className="flex-row items-center gap-1 mt-0.5 flex-wrap">
+                  <Text className="text-xs text-gray-400">방장: </Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setSelectedProfileUserId(room.host.id);
+                      setIsUserProfileModalOpen(true);
+                    }}
+                  >
+                    <Text className="text-xs text-gray-600 font-bold underline">
+                      {room.host.nickname}
+                    </Text>
+                  </TouchableOpacity>
+                  <MannerStars rating={(room.host.trustScore || 10.0) / 2} size={10} showText={true} />
+                  <Text className="text-xs text-gray-400"> · 마감 {formatDate(room.deadline)}</Text>
+                </View>
               </View>
               {room.restaurantUrl && (
                 <TouchableOpacity
@@ -369,6 +397,26 @@ export default function RoomDetailScreen() {
               </Text>
             </View>
           </View>
+
+          {/* 리뷰 작성 권장 배너 카드 */}
+          {room.status === 'SETTLED' && isMember && !hasReviewed && (
+            <View className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 gap-3 flex-row items-center justify-between">
+              <View className="flex-1 mr-2">
+                <Text className="text-sm font-bold text-emerald-800">
+                  🎉 배달 정산 완료!
+                </Text>
+                <Text className="text-xs text-emerald-600 mt-0.5" numberOfLines={2}>
+                  함께한 파티원들의 매너와 신뢰 별점을 평가하고 나누어보세요.
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => setIsReviewModalOpen(true)}
+                className="bg-emerald-500 px-3.5 py-2.5 rounded-xl shadow-sm active:opacity-70"
+              >
+                <Text className="text-white text-xs font-bold">별점 평가</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           {isHost && room.status === "OPEN" && (
             <View
@@ -541,19 +589,33 @@ export default function RoomDetailScreen() {
                         className={`flex-row gap-2 ${isMe ? "justify-end" : ""}`}
                       >
                         {!isMe && (
-                          <View className="w-8 h-8 rounded-full bg-primary-100 items-center justify-center">
+                          <TouchableOpacity
+                            onPress={() => {
+                              setSelectedProfileUserId(msg.userId || msg.user?.id || null);
+                              setIsUserProfileModalOpen(true);
+                            }}
+                            activeOpacity={0.7}
+                            className="w-8 h-8 rounded-full bg-primary-100 items-center justify-center"
+                          >
                             <Text className="text-primary-700 text-xs font-bold">
                               {msg.user?.nickname?.[0] ?? "?"}
                             </Text>
-                          </View>
+                          </TouchableOpacity>
                         )}
                         <View
                           className={`max-w-[70%] ${isMe ? "items-end" : ""}`}
                         >
                           {!isMe && (
-                            <Text className="text-xs text-gray-500 mb-1 ml-1">
-                              {msg.user?.nickname}
-                            </Text>
+                            <TouchableOpacity
+                              onPress={() => {
+                                setSelectedProfileUserId(msg.userId || msg.user?.id || null);
+                                setIsUserProfileModalOpen(true);
+                              }}
+                            >
+                              <Text className="text-xs text-gray-500 mb-1 ml-1 font-semibold underline">
+                                {msg.user?.nickname}
+                              </Text>
+                            </TouchableOpacity>
                           )}
                           <View
                             className={`px-3 py-2 rounded-2xl ${isMe ? "bg-primary-500 rounded-tr-sm" : "bg-white border border-gray-100 rounded-tl-sm"}`}
@@ -619,6 +681,32 @@ export default function RoomDetailScreen() {
           )}
         </View>
       </ScrollView>
+
+      {/* 신뢰도 평가 모달 */}
+      <ReviewModal
+        isOpen={isReviewModalOpen}
+        onClose={() => setIsReviewModalOpen(false)}
+        roomId={id!}
+        members={room.members || []}
+        currentUserId={user!.id}
+        onSuccess={() => {
+          setHasReviewed(true);
+          Alert.alert('알림', '상호 평가가 정상 등록되었습니다! 🌟');
+          queryClient.invalidateQueries({ queryKey: ['room', id] });
+        }}
+      />
+
+      {/* 신뢰도 프로필 모달 */}
+      {selectedProfileUserId && (
+        <UserProfileModal
+          isOpen={isUserProfileModalOpen}
+          onClose={() => {
+            setIsUserProfileModalOpen(false);
+            setSelectedProfileUserId(null);
+          }}
+          userId={selectedProfileUserId}
+        />
+      )}
     </KeyboardAvoidingView>
   );
 }

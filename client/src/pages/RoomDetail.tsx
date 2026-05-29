@@ -14,6 +14,10 @@ import MemberOrderList from '../components/order/MemberOrderList';
 import SettlementSummary from '../components/settlement/SettlementSummary';
 import { cn, formatCurrency, formatDate } from '../lib/utils';
 import { ChatMessage, Room } from '../types';
+import MannerStars from '../components/room/MannerStars';
+import ReviewModal from '../components/room/ReviewModal';
+import UserProfileModal from '../components/room/UserProfileModal';
+import { reviewsApi } from '../api/reviews';
 
 type Tab = 'order' | 'chat' | 'settlement';
 
@@ -28,6 +32,11 @@ export default function RoomDetail() {
   const [tab, setTab] = useState<Tab>('order');
   const [chatInput, setChatInput] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [isUserProfileModalOpen, setIsUserProfileModalOpen] = useState(false);
+  const [selectedProfileUserId, setSelectedProfileUserId] = useState<string | null>(null);
+  const [hasReviewed, setHasReviewed] = useState(true);
 
   const { data: room, isLoading } = useQuery({
     queryKey: ['room', id],
@@ -46,6 +55,13 @@ export default function RoomDetail() {
     if (!id) return;
     roomsApi.getChat(id).then((msgs: ChatMessage[]) => setMessages(msgs));
   }, [id, setMessages]);
+
+  useEffect(() => {
+    const isRoomMember = (room?.members || []).some((m) => m.userId === user?.id);
+    if (id && room?.status === 'SETTLED' && isRoomMember) {
+      reviewsApi.getReviewStatus(id).then((data) => setHasReviewed(data.hasReviewed));
+    }
+  }, [id, room?.status, room?.members, user?.id]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -258,8 +274,19 @@ export default function RoomDetail() {
                 )}
               </div>
               <h2 className="font-bold text-gray-900 mt-1">{room.title}</h2>
-              <p className="text-xs text-gray-400 mt-0.5">
-                방장: {room.host.nickname} · 마감 {formatDate(room.deadline)}
+              <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                <span>방장:</span>
+                <button
+                  onClick={() => {
+                    setSelectedProfileUserId(room.host.id);
+                    setIsUserProfileModalOpen(true);
+                  }}
+                  className="font-bold text-gray-600 hover:underline hover:text-primary-600 cursor-pointer transition-colors"
+                >
+                  {room.host.nickname}
+                </button>
+                <MannerStars rating={(room.host.trustScore || 10.0) / 2} size={12} showText={true} />
+                <span>· 마감 {formatDate(room.deadline)}</span>
               </p>
             </div>
             {room.restaurantUrl && (
@@ -285,6 +312,26 @@ export default function RoomDetail() {
             </span>
           </div>
         </div>
+
+        {/* 리뷰 작성 권장 배너 */}
+        {room.status === 'SETTLED' && isMember && !hasReviewed && (
+          <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-sm animate-in slide-in-from-top-4 duration-300">
+            <div>
+              <h3 className="text-sm font-bold text-emerald-800 flex items-center gap-1.5">
+                🎉 배달 파티 정산이 완료되었습니다!
+              </h3>
+              <p className="text-xs text-emerald-600 mt-0.5">
+                함께한 파티원들의 매너와 신뢰도를 평가하고 별점을 나누어보세요.
+              </p>
+            </div>
+            <button
+              onClick={() => setIsReviewModalOpen(true)}
+              className="w-full sm:w-auto text-xs bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-bold shadow-md transition-all active:scale-95 flex items-center justify-center gap-1 flex-shrink-0 cursor-pointer"
+            >
+              ⭐ 파티원 평가하기
+            </button>
+          </div>
+        )}
 
         {isHost && room.status === 'OPEN' && (
           <div className={cn(
@@ -436,13 +483,27 @@ export default function RoomDetail() {
                   return (
                     <div key={msg.id} className={cn('flex gap-2', isMe && 'flex-row-reverse')}>
                       {!isMe && (
-                        <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0 text-primary-700 text-xs font-bold">
+                        <button
+                          onClick={() => {
+                            setSelectedProfileUserId(msg.userId || msg.user?.id || null);
+                            setIsUserProfileModalOpen(true);
+                          }}
+                          className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0 text-primary-700 text-xs font-bold hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                        >
                           {msg.user?.nickname?.[0] ?? '?'}
-                        </div>
+                        </button>
                       )}
                       <div className={cn('max-w-[70%]', isMe && 'items-end flex flex-col')}>
                         {!isMe && (
-                          <p className="text-xs text-gray-500 mb-1 ml-1">{msg.user?.nickname}</p>
+                          <button
+                            onClick={() => {
+                              setSelectedProfileUserId(msg.userId || msg.user?.id || null);
+                              setIsUserProfileModalOpen(true);
+                            }}
+                            className="text-xs text-gray-500 mb-1 ml-1 hover:underline hover:text-primary-600 font-semibold cursor-pointer"
+                          >
+                            {msg.user?.nickname}
+                          </button>
                         )}
                         <div
                           className={cn(
@@ -506,6 +567,32 @@ export default function RoomDetail() {
           </div>
         )}
       </div>
+
+      {/* 신뢰도 평가 모달 */}
+      <ReviewModal
+        isOpen={isReviewModalOpen}
+        onClose={() => setIsReviewModalOpen(false)}
+        roomId={id!}
+        members={room.members || []}
+        currentUserId={user!.id}
+        onSuccess={() => {
+          setHasReviewed(true);
+          alert('상호 평가가 정상 등록되었습니다! 🌟');
+          queryClient.invalidateQueries({ queryKey: ['room', id] });
+        }}
+      />
+
+      {/* 신뢰도 프로필 모달 */}
+      {selectedProfileUserId && (
+        <UserProfileModal
+          isOpen={isUserProfileModalOpen}
+          onClose={() => {
+            setIsUserProfileModalOpen(false);
+            setSelectedProfileUserId(null);
+          }}
+          userId={selectedProfileUserId}
+        />
+      )}
     </div>
   );
 }
