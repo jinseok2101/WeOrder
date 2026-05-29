@@ -465,7 +465,7 @@ export default function RoomDetailScreen() {
             </View>
           )}
 
-          {isHost && (room.status === "ORDERING" || room.status === "ORDERED") && (
+          {isHost && ["ORDERING", "ORDERED", "SETTLED"].includes(room.status) && (
             <View className="bg-amber-50 border border-amber-200 rounded-2xl p-4 gap-3">
               <View>
                 <Text className="text-sm font-bold text-amber-800">

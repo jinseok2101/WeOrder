@@ -377,7 +377,7 @@ export default function RoomDetail() {
           </div>
         )}
 
-        {isHost && (room.status === 'ORDERING' || room.status === 'ORDERED') && (
+        {isHost && ['ORDERING', 'ORDERED', 'SETTLED'].includes(room.status) && (
           <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 space-y-3">
             <div>
               <h3 className="text-sm font-bold text-amber-800 flex items-center gap-1.5">
