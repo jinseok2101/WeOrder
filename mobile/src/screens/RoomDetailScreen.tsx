@@ -55,7 +55,9 @@ export default function RoomDetailScreen() {
 
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [isUserProfileModalOpen, setIsUserProfileModalOpen] = useState(false);
-  const [selectedProfileUserId, setSelectedProfileUserId] = useState<string | null>(null);
+  const [selectedProfileUserId, setSelectedProfileUserId] = useState<
+    string | null
+  >(null);
   const [hasReviewed, setHasReviewed] = useState(true);
 
   const { data: room, isLoading } = useQuery({
@@ -77,9 +79,13 @@ export default function RoomDetailScreen() {
   }, [id, setMessages]);
 
   useEffect(() => {
-    const isRoomMember = (room?.members || []).some((m) => m.userId === user?.id);
-    if (id && room?.status === 'SETTLED' && isRoomMember) {
-      reviewsApi.getReviewStatus(id).then((data) => setHasReviewed(data.hasReviewed));
+    const isRoomMember = (room?.members || []).some(
+      (m) => m.userId === user?.id,
+    );
+    if (id && room?.status === "SETTLED" && isRoomMember) {
+      reviewsApi
+        .getReviewStatus(id)
+        .then((data) => setHasReviewed(data.hasReviewed));
     }
   }, [id, room?.status, room?.members, user?.id]);
 
@@ -362,8 +368,15 @@ export default function RoomDetailScreen() {
                       {room.host.nickname}
                     </Text>
                   </TouchableOpacity>
-                  <MannerStars rating={(room.host.trustScore || 10.0) / 2} size={10} showText={true} />
-                  <Text className="text-xs text-gray-400"> · 마감 {formatDate(room.deadline)}</Text>
+                  <MannerStars
+                    rating={(room.host.trustScore || 10.0) / 2}
+                    size={10}
+                    showText={true}
+                  />
+                  <Text className="text-xs text-gray-400">
+                    {" "}
+                    · 마감 {formatDate(room.deadline)}
+                  </Text>
                 </View>
               </View>
               {room.restaurantUrl && (
@@ -399,21 +412,27 @@ export default function RoomDetailScreen() {
           </View>
 
           {/* 리뷰 작성 권장 배너 카드 */}
-          {room.status === 'SETTLED' && isMember && !hasReviewed && (
+          {room.status === "SETTLED" && isMember && !hasReviewed && (
             <View className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 gap-3 flex-col sm:flex-row items-center justify-between">
               <View className="flex-1 mr-2 w-full">
                 <Text className="text-sm font-bold text-emerald-800">
                   배달이 완료되었나요?
                 </Text>
-                <Text className="text-xs text-emerald-600 mt-1" numberOfLines={2}>
-                  음식을 안전하게 받으셨다면, 이웃들의 신뢰도를 평가하고 정산을 최종 마감해보세요.
+                <Text
+                  className="text-xs text-emerald-600 mt-1"
+                  numberOfLines={2}
+                >
+                  음식을 안전하게 받으셨다면, 이웃들의 신뢰도를 평가하고 정산을
+                  최종 마감해보세요.
                 </Text>
               </View>
               <TouchableOpacity
                 onPress={() => setIsReviewModalOpen(true)}
                 className="bg-emerald-500 px-4 py-2.5 rounded-xl shadow-sm active:opacity-70 mt-2 w-full items-center"
               >
-                <Text className="text-white text-xs font-bold">음식 수령 & 이웃 평가하기</Text>
+                <Text className="text-white text-xs font-bold">
+                  음식 수령 & 이웃 평가하기
+                </Text>
               </TouchableOpacity>
             </View>
           )}
@@ -465,47 +484,55 @@ export default function RoomDetailScreen() {
             </View>
           )}
 
-          {isHost && ["ORDERING", "ORDERED", "SETTLED"].includes(room.status) && (
-            <View className="bg-amber-50 border border-amber-200 rounded-2xl p-4 gap-3">
-              <View>
-                <Text className="text-sm font-bold text-amber-800">
-                  🛵 배달 도착 알림 제어
-                </Text>
-                <Text className="text-xs text-amber-600 mt-0.5">
-                  이웃들에게 배달 도착 예정 소식을 실시간 알림 및 푸시로 보냅니다.
-                </Text>
+          {isHost &&
+            ["ORDERING", "ORDERED", "SETTLED"].includes(room.status) && (
+              <View className="bg-amber-50 border border-amber-200 rounded-2xl p-4 gap-3">
+                <View>
+                  <Text className="text-sm font-bold text-amber-800">
+                    🛵 배달 도착 알림 제어
+                  </Text>
+                  <Text className="text-xs text-amber-600 mt-0.5">
+                    이웃들에게 배달 도착 예정 소식을 실시간 알림 및 푸시로
+                    보냅니다.
+                  </Text>
+                </View>
+                <View className="flex-row gap-2">
+                  <TouchableOpacity
+                    onPress={() => {
+                      sendDeliveryArriving(id!, 10);
+                      Alert.alert("알림", "10분 전 도착 알림을 발송했습니다.");
+                    }}
+                    className="flex-1 bg-white border border-amber-200 py-3 rounded-xl items-center justify-center gap-1 shadow-sm active:opacity-75"
+                  >
+                    <Text className="text-sm font-semibold text-amber-800">
+                      10분 전
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => {
+                      sendDeliveryArriving(id!, 5);
+                      Alert.alert("알림", "5분 전 도착 알림을 발송했습니다.");
+                    }}
+                    className="flex-1 bg-white border border-amber-200 py-3 rounded-xl items-center justify-center gap-1 shadow-sm active:opacity-75"
+                  >
+                    <Text className="text-sm font-semibold text-amber-800">
+                      5분 전
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => {
+                      sendDeliveryArriving(id!, 0);
+                      Alert.alert("알림", "도착 완료 알림을 발송했습니다.");
+                    }}
+                    className="flex-1 bg-amber-500 py-3 rounded-xl items-center justify-center gap-1 shadow-md active:opacity-75"
+                  >
+                    <Text className="text-sm font-bold text-white">
+                      도착 완료!
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-              <View className="flex-row gap-2">
-                <TouchableOpacity
-                  onPress={() => {
-                    sendDeliveryArriving(id!, 10);
-                    Alert.alert("알림", "10분 전 도착 알림을 발송했습니다.");
-                  }}
-                  className="flex-1 bg-white border border-amber-200 py-3 rounded-xl items-center justify-center gap-1 shadow-sm active:opacity-75"
-                >
-                  <Text className="text-sm font-semibold text-amber-800">⏰ 10분 전</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {
-                    sendDeliveryArriving(id!, 5);
-                    Alert.alert("알림", "5분 전 도착 알림을 발송했습니다.");
-                  }}
-                  className="flex-1 bg-white border border-amber-200 py-3 rounded-xl items-center justify-center gap-1 shadow-sm active:opacity-75"
-                >
-                  <Text className="text-sm font-semibold text-amber-800">⏱️ 5분 전</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {
-                    sendDeliveryArriving(id!, 0);
-                    Alert.alert("알림", "도착 완료 알림을 발송했습니다.");
-                  }}
-                  className="flex-1 bg-amber-500 py-3 rounded-xl items-center justify-center gap-1 shadow-md active:opacity-75"
-                >
-                  <Text className="text-sm font-bold text-white">도착 완료!</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
+            )}
         </View>
 
         <View className="bg-white border-b border-gray-100 px-4 pt-1 flex-row bg-white z-10">
@@ -591,7 +618,9 @@ export default function RoomDetailScreen() {
                         {!isMe && (
                           <TouchableOpacity
                             onPress={() => {
-                              setSelectedProfileUserId(msg.userId || msg.user?.id || null);
+                              setSelectedProfileUserId(
+                                msg.userId || msg.user?.id || null,
+                              );
                               setIsUserProfileModalOpen(true);
                             }}
                             activeOpacity={0.7}
@@ -608,7 +637,9 @@ export default function RoomDetailScreen() {
                           {!isMe && (
                             <TouchableOpacity
                               onPress={() => {
-                                setSelectedProfileUserId(msg.userId || msg.user?.id || null);
+                                setSelectedProfileUserId(
+                                  msg.userId || msg.user?.id || null,
+                                );
                                 setIsUserProfileModalOpen(true);
                               }}
                             >
@@ -691,8 +722,8 @@ export default function RoomDetailScreen() {
         currentUserId={user!.id}
         onSuccess={() => {
           setHasReviewed(true);
-          Alert.alert('알림', '상호 평가가 정상 등록되었습니다! 🌟');
-          queryClient.invalidateQueries({ queryKey: ['room', id] });
+          Alert.alert("알림", "상호 평가가 정상 등록되었습니다! 🌟");
+          queryClient.invalidateQueries({ queryKey: ["room", id] });
         }}
       />
 
