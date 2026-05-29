@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { User as UserIcon, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { authApi } from '../../api/auth';
@@ -13,6 +13,14 @@ export default function ProfileSettings() {
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [isUserProfileModalOpen, setIsUserProfileModalOpen] = useState(false);
+
+  useEffect(() => {
+    authApi.me()
+      .then((latestUser) => {
+        setUser(latestUser);
+      })
+      .catch((err) => console.error('Failed to sync user profile:', err));
+  }, []);
 
   const mutation = useMutation({
     mutationFn: authApi.updateProfile,

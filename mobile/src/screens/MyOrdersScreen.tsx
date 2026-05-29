@@ -8,6 +8,7 @@ import UserProfileModal from '../components/room/UserProfileModal';
 import { roomsApi } from '../api/rooms';
 import { Room } from '../types';
 import { useAuthStore } from '../store/authStore';
+import { authApi } from '../api/auth';
 import Header from '../components/layout/Header';
 import BottomNav from '../components/layout/BottomNav';
 import RoomStatusBadge from '../components/room/RoomStatusBadge';
@@ -49,8 +50,17 @@ function SettlementIndicator({ room, userId }: { room: Room; userId: string }) {
 
 export default function MyOrdersScreen() {
   const navigation = useNavigation<any>();
-  const user = useAuthStore((s) => s.user);
+  const { user, setUser } = useAuthStore();
   const [isProfileModalOpen, setIsProfileModalOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    authApi.me()
+      .then((latestUser) => {
+        setUser(latestUser);
+      })
+      .catch((err) => console.warn('Failed to sync user profile in mobile screen:', err));
+  }, []);
+
 
   const { data: rooms = [], isLoading } = useQuery({
     queryKey: ['rooms', 'mine'],
