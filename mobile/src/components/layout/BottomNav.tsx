@@ -6,7 +6,7 @@ import { Home, ClipboardList, PlusCircle } from 'lucide-react-native';
 const tabs = [
   { name: 'Home', icon: Home, label: '홈' },
   { name: 'CreateRoom', icon: PlusCircle, label: '방 만들기' },
-  { name: 'MyOrders', icon: ClipboardList, label: '내 주문' },
+  { name: 'MyOrders', icon: ClipboardList, label: '마이페이지' },
 ];
 
 export default function BottomNav() {

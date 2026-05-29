@@ -40,7 +40,7 @@ export default function BottomNav() {
           }
         >
           <ClipboardList size={22} />
-          <span className="text-xs font-medium">내 주문</span>
+          <span className="text-xs font-medium">마이페이지</span>
         </NavLink>
       </div>
     </nav>
