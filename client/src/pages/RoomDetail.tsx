@@ -442,7 +442,7 @@ export default function RoomDetail() {
         </div>
       </div>
 
-      <div className="px-4 pt-4 pb-24">
+      <div className={cn("px-4 pt-4", tab === 'chat' ? "pb-4" : "pb-24")}>
         {tab === 'order' && (
           <MemberOrderList
             orderItems={room.orderItems || []}
@@ -462,7 +462,7 @@ export default function RoomDetail() {
               방 참여자만 채팅을 볼 수 있습니다.
             </div>
           ) : (
-            <div className="flex flex-col" style={{ height: 'calc(100vh - 320px)' }}>
+            <div className="flex flex-col" style={{ height: 'calc(100dvh - 360px)' }}>
               <div className="flex-1 overflow-y-auto space-y-2 pr-1">
                 {messages.length === 0 && (
                   <p className="text-center text-sm text-gray-400 py-8">
