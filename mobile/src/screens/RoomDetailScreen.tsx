@@ -43,7 +43,7 @@ export default function RoomDetailScreen() {
   const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
   const { messages, setMessages, orderTotals, setOrderTotals } = useRoomStore();
-  const { sendMessage } = useSocket(id);
+  const { sendMessage, sendDeliveryArriving } = useSocket(id);
 
   const [tab, setTab] = useState<Tab>("order");
   const [chatInput, setChatInput] = useState("");
@@ -414,6 +414,48 @@ export default function RoomDetailScreen() {
                   </Text>
                 )}
               </TouchableOpacity>
+            </View>
+          )}
+
+          {isHost && (room.status === "ORDERING" || room.status === "ORDERED") && (
+            <View className="bg-amber-50 border border-amber-200 rounded-2xl p-4 gap-3">
+              <View>
+                <Text className="text-sm font-bold text-amber-800">
+                  🛵 배달 도착 알림 제어
+                </Text>
+                <Text className="text-xs text-amber-600 mt-0.5">
+                  파티원들에게 배달 도착 예정 소식을 실시간 알림 및 푸시로 보냅니다.
+                </Text>
+              </View>
+              <View className="flex-row gap-2">
+                <TouchableOpacity
+                  onPress={() => {
+                    sendDeliveryArriving(id!, 10);
+                    Alert.alert("알림", "10분 전 도착 알림을 발송했습니다.");
+                  }}
+                  className="flex-1 bg-white border border-amber-200 py-3 rounded-xl items-center justify-center gap-1 shadow-sm active:opacity-75"
+                >
+                  <Text className="text-sm font-semibold text-amber-800">⏰ 10분 전</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => {
+                    sendDeliveryArriving(id!, 5);
+                    Alert.alert("알림", "5분 전 도착 알림을 발송했습니다.");
+                  }}
+                  className="flex-1 bg-white border border-amber-200 py-3 rounded-xl items-center justify-center gap-1 shadow-sm active:opacity-75"
+                >
+                  <Text className="text-sm font-semibold text-amber-800">⏱️ 5분 전</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => {
+                    sendDeliveryArriving(id!, 0);
+                    Alert.alert("알림", "도착 완료 알림을 발송했습니다.");
+                  }}
+                  className="flex-1 bg-amber-500 py-3 rounded-xl items-center justify-center gap-1 shadow-md active:opacity-75"
+                >
+                  <Text className="text-sm font-bold text-white">🎉 도착 완료!</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           )}
         </View>

@@ -23,7 +23,7 @@ export default function RoomDetail() {
   const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
   const { messages, setMessages, addMessage, orderTotals, setOrderTotals } = useRoomStore();
-  const { sendMessage } = useSocket(id);
+  const { sendMessage, sendDeliveryArriving } = useSocket(id);
 
   const [tab, setTab] = useState<Tab>('order');
   const [chatInput, setChatInput] = useState('');
@@ -327,6 +327,48 @@ export default function RoomDetail() {
             >
               {settleMutation.isPending ? '...' : '정산 생성'}
             </button>
+          </div>
+        )}
+
+        {isHost && (room.status === 'ORDERING' || room.status === 'ORDERED') && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 space-y-3">
+            <div>
+              <h3 className="text-sm font-bold text-amber-800 flex items-center gap-1.5">
+                🛵 배달 도착 알림 제어
+              </h3>
+              <p className="text-xs text-amber-600 mt-0.5">
+                파티원들에게 배달 도착 예정 소식을 실시간 알림 및 푸시로 보냅니다.
+              </p>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                onClick={() => {
+                  sendDeliveryArriving(id!, 10);
+                  alert('10분 전 도착 알림을 발송했습니다.');
+                }}
+                className="bg-white border border-amber-200 text-amber-800 hover:bg-amber-100/50 text-xs py-2.5 px-1 rounded-xl font-semibold transition-all flex flex-col items-center justify-center gap-1 shadow-sm active:scale-95 duration-100"
+              >
+                <span className="text-base">⏰ 10분 전</span>
+              </button>
+              <button
+                onClick={() => {
+                  sendDeliveryArriving(id!, 5);
+                  alert('5분 전 도착 알림을 발송했습니다.');
+                }}
+                className="bg-white border border-amber-200 text-amber-800 hover:bg-amber-100/50 text-xs py-2.5 px-1 rounded-xl font-semibold transition-all flex flex-col items-center justify-center gap-1 shadow-sm active:scale-95 duration-100"
+              >
+                <span className="text-base">⏱️ 5분 전</span>
+              </button>
+              <button
+                onClick={() => {
+                  sendDeliveryArriving(id!, 0);
+                  alert('도착 완료 알림을 발송했습니다.');
+                }}
+                className="bg-amber-500 hover:bg-amber-600 text-white text-xs py-2.5 px-1 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-1 shadow-md active:scale-95 duration-100"
+              >
+                <span className="text-base">🎉 도착 완료!</span>
+              </button>
+            </div>
           </div>
         )}
       </div>

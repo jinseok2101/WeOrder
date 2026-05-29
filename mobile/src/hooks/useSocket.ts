@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { Alert } from 'react-native';
 import { connectSocket } from '../socket/socket';
 import { useAuthStore } from '../store/authStore';
 import { useRoomStore } from '../store/roomStore';
@@ -88,6 +89,20 @@ export function useSocket(roomId?: string) {
       queryClient.setQueryData(['settlement', roomId], settlement);
     };
 
+    const onDeliveryArriving = ({ roomId: rId, minutes }: { roomId: string; minutes: number }) => {
+      if (rId === roomId) {
+        const isHost = queryClient.getQueryData<Room>(['room', roomId])?.hostId === useAuthStore.getState().user?.id;
+        if (!isHost) {
+          Alert.alert(
+            minutes === 0 ? "🔔 배달 완료!" : "🔔 배달 예정!",
+            minutes === 0
+              ? "지금 배달음식이 공동 픽업지에 도착했습니다. 얼른 나와서 받아 가세요!"
+              : `배달음식이 약 ${minutes}분 뒤에 도착합니다. 준비해서 공동 픽업지로 나와주세요!`
+          );
+        }
+      }
+    };
+
     socket.on('room:updated', onRoomUpdated);
     socket.on('room:member_joined', onMemberJoined);
     socket.on('room:member_left', onMemberLeft);
@@ -97,6 +112,7 @@ export function useSocket(roomId?: string) {
     socket.on('order:item_deleted', onItemDeleted);
     socket.on('settlement:created', onSettlementCreated);
     socket.on('settlement:updated', onSettlementUpdated);
+    socket.on('delivery:arriving', onDeliveryArriving);
 
     return () => {
       if (roomId && joinedRef.current === roomId) {
@@ -113,6 +129,7 @@ export function useSocket(roomId?: string) {
       socket.off('order:item_deleted', onItemDeleted);
       socket.off('settlement:created', onSettlementCreated);
       socket.off('settlement:updated', onSettlementUpdated);
+      socket.off('delivery:arriving', onDeliveryArriving);
     };
   }, [token, roomId, addMessage, setOrderTotals, queryClient]);
 
@@ -122,5 +139,11 @@ export function useSocket(roomId?: string) {
     socket.emit('chat:send', { roomId, content });
   };
 
-  return { sendMessage };
+  const sendDeliveryArriving = (roomId: string, minutes: number) => {
+    if (!token) return;
+    const socket = connectSocket(token);
+    socket.emit('delivery:arriving', { roomId, minutes });
+  };
+
+  return { sendMessage, sendDeliveryArriving };
 }
