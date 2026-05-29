@@ -96,41 +96,65 @@ export default function MyOrdersScreen() {
           onPress={() => setIsProfileModalOpen(true)}
           activeOpacity={0.8}
           style={{
-            backgroundColor: 'rgba(255, 251, 235, 0.5)',
-            borderColor: '#fef3c7',
-            borderWidth: 1,
+            backgroundColor: '#fffdf0',
+            borderColor: '#fde68a',
+            borderWidth: 1.5,
+            borderRadius: 16,
+            padding: 16,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: 24,
+            shadowColor: '#d97706',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.05,
+            shadowRadius: 4,
+            elevation: 2,
           }}
-          className="rounded-2xl p-4 flex-row items-center justify-between mb-6 shadow-sm"
         >
-          <View className="flex-row items-center gap-3">
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <View
-              style={{ backgroundColor: '#fef3c7' }}
-              className="w-10 h-10 rounded-full flex items-center justify-center"
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                backgroundColor: '#fef3c7',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
             >
               <Star size={20} color="#d97706" fill="#d97706" />
             </View>
-            <View>
+            <View style={{ marginLeft: 12 }}>
               <Text
-                style={{ color: '#92400e' }}
-                className="text-[10px] font-extrabold tracking-wider"
+                style={{
+                  color: '#92400e',
+                  fontSize: 10,
+                  fontWeight: '800',
+                  letterSpacing: 0.5,
+                }}
               >
                 나의 신뢰 등급
               </Text>
-              <View className="flex-row items-center gap-1.5 mt-0.5">
-                <Text className="text-base font-extrabold text-gray-900">
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
+                <Text style={{ fontSize: 16, fontWeight: '800', color: '#111827' }}>
                   {((user?.trustScore ?? 10) / 2).toFixed(1)}
                 </Text>
-                <Text className="text-[11px] text-gray-400 font-bold">/ 5.0</Text>
-                <Text className="text-xs text-gray-400 font-semibold ml-1">
+                <Text style={{ fontSize: 11, color: '#9ca3af', fontWeight: '700', marginLeft: 2 }}>/ 5.0</Text>
+                <Text style={{ fontSize: 12, color: '#9ca3af', fontWeight: '600', marginLeft: 4 }}>
                   ({user?.reviewCount ?? 0}회 평가)
                 </Text>
               </View>
             </View>
           </View>
-          <View className="flex-row items-center gap-1">
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Text
-              style={{ color: '#78350f' }}
-              className="text-xs font-bold"
+              style={{
+                color: '#78350f',
+                fontSize: 12,
+                fontWeight: '700',
+                marginRight: 4,
+              }}
             >
               내 프로필 보기
             </Text>
