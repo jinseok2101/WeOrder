@@ -30,19 +30,47 @@ import { registerPushNotifications } from "../lib/push";
 export default function Home() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
-  const [showNotificationBanner, setShowNotificationBanner] = useState(() => {
-    return 'Notification' in window && Notification.permission === 'default';
+  const [bannerType, setBannerType] = useState<'default' | 'denied' | null>(() => {
+    if ('Notification' in window) {
+      if (Notification.permission === 'default') return 'default';
+      if (Notification.permission === 'denied') return 'denied';
+    }
+    return null;
   });
 
   const handleEnableNotifications = async () => {
     try {
       await registerPushNotifications();
+      if (Notification.permission === 'granted') {
+        setBannerType(null);
+      } else if (Notification.permission === 'denied') {
+        setBannerType('denied');
+      }
     } catch (e) {
       console.warn('Failed to subscribe from home banner:', e);
-    } finally {
-      setShowNotificationBanner(false);
     }
   };
+
+  const handleShowDeniedGuide = () => {
+    const isStandalone = window.matchMedia("(display-mode: standalone)").matches || (navigator as any).standalone;
+    if (isStandalone) {
+      alert(
+        "🔓 아이폰 알림 차단 해제 방법:\n\n" +
+        "1. 휴대폰의 [설정] 앱으로 이동합니다.\n" +
+        "2. [알림] 메뉴를 선택합니다.\n" +
+        "3. [WeOrder] 앱을 찾아서 클릭합니다.\n" +
+        "4. [알림 허용] 스위치를 활성화(초록색)해주세요!"
+      );
+    } else {
+      alert(
+        "🔓 브라우저 알림 차단 해제 방법:\n\n" +
+        "1. Safari/주소창 왼쪽의 브라우저 제어 아이콘 또는 자물쇠(🔒)를 누릅니다.\n" +
+        "2. 알림 설정을 '허용'으로 변경해주세요.\n" +
+        "3. 변경 후 앱을 새로고침 해주세요."
+      );
+    }
+  };
+
 
   const {
     latitude,
@@ -405,7 +433,7 @@ export default function Home() {
     <div className="min-h-screen bg-gray-50 pb-24">
       <Header title="WeOrder" showLogout showHome />
 
-      {showNotificationBanner && (
+      {bannerType === 'default' && (
         <div className="mx-4 mt-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between shadow-sm animate-in slide-in-from-top-4 duration-300">
           <div className="flex-1 min-w-0 pr-2">
             <h4 className="text-xs font-extrabold text-amber-800 tracking-wider">🔔 실시간 알림 받기</h4>
@@ -415,7 +443,7 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             <button
-              onClick={() => setShowNotificationBanner(false)}
+              onClick={() => setBannerType(null)}
               className="text-xs font-bold text-gray-400 hover:text-gray-600 px-2 py-1.5 transition-colors"
             >
               다음에
@@ -429,6 +457,32 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {bannerType === 'denied' && (
+        <div className="mx-4 mt-4 bg-gradient-to-r from-rose-50 to-red-50 border border-rose-200 rounded-2xl p-4 flex items-center justify-between shadow-sm animate-in slide-in-from-top-4 duration-300">
+          <div className="flex-1 min-w-0 pr-2">
+            <h4 className="text-xs font-extrabold text-rose-800 tracking-wider">⚠️ 기기 알림이 꺼져 있습니다</h4>
+            <p className="text-[11px] text-rose-700 mt-1 font-semibold leading-relaxed">
+              알림 권한이 차단되어 있습니다. 휴대폰 설정에서 알림 허용을 직접 켜주셔야 실시간 배달 및 정산 알림을 받으실 수 있습니다.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={() => setBannerType(null)}
+              className="text-xs font-bold text-gray-400 hover:text-gray-600 px-2 py-1.5 transition-colors"
+            >
+              닫기
+            </button>
+            <button
+              onClick={handleShowDeniedGuide}
+              className="bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-sm transition-all active:scale-95 cursor-pointer"
+            >
+              설정 방법
+            </button>
+          </div>
+        </div>
+      )}
+
 
       <div className="px-4 pt-4 pb-2">
 
