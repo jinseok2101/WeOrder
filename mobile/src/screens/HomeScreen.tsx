@@ -240,23 +240,23 @@ export default function HomeScreen() {
 
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <View className="px-4 pt-4 pb-2">
-          <View className="flex-row items-center gap-2 mb-3 px-1 flex-wrap">
-            <Text className="font-medium text-gray-800 text-[15px] flex-row items-center flex-wrap">
-              <Text className="text-gray-800">안녕하세요, </Text>
-              <TouchableOpacity
-                onPress={() => {
-                  if (user?.id) {
-                    setSelectedProfileUserId(user.id);
-                    setIsUserProfileModalOpen(true);
-                  }
-                }}
-              >
-                <Text className="text-primary-600 font-bold underline">
-                  {user?.nickname}
-                </Text>
-              </TouchableOpacity>
-              <Text className="text-gray-800">님!</Text>
-            </Text>
+          <View className="flex-row items-center flex-wrap mb-3 px-1">
+            <Text className="font-medium text-gray-800 text-[15px]">안녕하세요, </Text>
+            <TouchableOpacity
+              onPress={() => {
+                if (user?.id) {
+                  setSelectedProfileUserId(user.id);
+                  setIsUserProfileModalOpen(true);
+                }
+              }}
+              activeOpacity={0.7}
+              style={{ justifyContent: 'center', alignItems: 'center' }}
+            >
+              <Text className="text-primary-600 font-bold underline text-[15px]">
+                {user?.nickname}
+              </Text>
+            </TouchableOpacity>
+            <Text className="font-medium text-gray-800 text-[15px] mr-2">님!</Text>
             {user?.trustScore !== undefined && (
               <MannerStars rating={user.trustScore / 2} size={13} showText={true} />
             )}
