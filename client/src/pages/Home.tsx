@@ -22,12 +22,28 @@ import { cn } from "../lib/utils";
 import { addressesApi, UserAddress } from "../api/addresses";
 import MannerStars from "../components/room/MannerStars";
 import UserProfileModal from "../components/room/UserProfileModal";
+import { registerPushNotifications } from "../lib/push";
+
 
 // 반경 필터 기능 제거
 
 export default function Home() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
+  const [showNotificationBanner, setShowNotificationBanner] = useState(() => {
+    return 'Notification' in window && Notification.permission === 'default';
+  });
+
+  const handleEnableNotifications = async () => {
+    try {
+      await registerPushNotifications();
+    } catch (e) {
+      console.warn('Failed to subscribe from home banner:', e);
+    } finally {
+      setShowNotificationBanner(false);
+    }
+  };
+
   const {
     latitude,
     longitude,
@@ -389,7 +405,33 @@ export default function Home() {
     <div className="min-h-screen bg-gray-50 pb-24">
       <Header title="WeOrder" showLogout showHome />
 
+      {showNotificationBanner && (
+        <div className="mx-4 mt-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between shadow-sm animate-in slide-in-from-top-4 duration-300">
+          <div className="flex-1 min-w-0 pr-2">
+            <h4 className="text-xs font-extrabold text-amber-800 tracking-wider">🔔 실시간 알림 받기</h4>
+            <p className="text-[11px] text-amber-700 mt-1 font-semibold leading-relaxed">
+              공동 배달 진행 상태, 실시간 배달 도착 상황 및 정산 입금 요청 소식을 실시간 알림으로 받아보세요!
+            </p>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={() => setShowNotificationBanner(false)}
+              className="text-xs font-bold text-gray-400 hover:text-gray-600 px-2 py-1.5 transition-colors"
+            >
+              다음에
+            </button>
+            <button
+              onClick={handleEnableNotifications}
+              className="bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-sm transition-all active:scale-95 cursor-pointer"
+            >
+              알림 켜기
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="px-4 pt-4 pb-2">
+
         <div className="flex items-center gap-2 mb-3 px-1 flex-wrap">
           <p className="font-medium text-gray-800 text-[15px] flex items-center gap-1.5 flex-wrap">
             <span>안녕하세요,</span>
