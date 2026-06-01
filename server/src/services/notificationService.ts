@@ -1,5 +1,6 @@
 import webpush from 'web-push';
 import { prisma } from '../prisma';
+import { getIo } from '../io';
 
 let vapidKeys = {
   publicKey: process.env.VAPID_PUBLIC_KEY,
@@ -30,6 +31,33 @@ export const notificationService = {
     category: 'chat' | 'roomStatus' | 'settlement'
   ) => {
     try {
+      // 0. Save in-app notification records to the database for all target users
+      const notificationsData = userIds.map((uId) => ({
+        userId: uId,
+        title: payload.title,
+        body: payload.body,
+        type: category === 'chat' ? 'CHAT' : category === 'roomStatus' ? 'ROOM_STATUS' : 'SETTLEMENT',
+        targetId: payload.data?.roomId || null,
+      }));
+
+      if (notificationsData.length > 0) {
+        await prisma.notification.createMany({
+          data: notificationsData
+        }).catch((err) => {
+          console.error('❌ Failed to save in-app notifications to DB:', err);
+        });
+
+        // Broadcast real-time WebSocket signals to online users
+        try {
+          const io = getIo();
+          userIds.forEach((uId) => {
+            io.to(`user:${uId}`).emit('notification:new');
+          });
+        } catch (ioErr) {
+          // Socket.io is not initialized in off-line scripts or migrations
+        }
+      }
+
       // 1. Get all active subscriptions for the target users, including user settings
       const subscriptions = await prisma.pushSubscription.findMany({
         where: {

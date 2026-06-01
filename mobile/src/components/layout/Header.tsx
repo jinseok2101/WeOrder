@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { ArrowLeft, LogOut, Home as HomeIcon } from 'lucide-react-native';
 import { useAuthStore } from '../../store/authStore';
+import NotificationBell from '../notification/NotificationBell';
 
 interface HeaderProps {
   title: string;
@@ -15,6 +16,7 @@ interface HeaderProps {
 export default function Header({ title, showBack = false, showHome = false, showLogout = false, right }: HeaderProps) {
   const navigation = useNavigation<any>();
   const logout = useAuthStore((s) => s.logout);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   return (
     <View className="bg-white border-b border-gray-100 px-4 h-14 flex-row items-center justify-between" style={{ paddingTop: 40, height: 90 }}>
@@ -38,6 +40,7 @@ export default function Header({ title, showBack = false, showHome = false, show
             <HomeIcon size={18} color="#6b7280" />
           </TouchableOpacity>
         )}
+        {isAuthenticated && <NotificationBell />}
         {right}
         {showLogout && (
           <TouchableOpacity

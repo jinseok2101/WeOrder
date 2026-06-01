@@ -39,6 +39,7 @@ model User {
   pushSubscriptions PushSubscription[]
   reviewsGiven      UserReview[]      @relation("Reviewer")
   reviewsReceived   UserReview[]      @relation("Reviewee")
+  notifications     Notification[]
 }
 
 model UserAddress {
@@ -192,4 +193,16 @@ model UserReview {
   createdAt   DateTime @default(now())
 
   @@unique([roomId, reviewerId, revieweeId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  body      String
+  type      String   // "CHAT", "ROOM_STATUS", "SETTLEMENT"
+  targetId  String?  // 연관된 Room ID 등
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
 }

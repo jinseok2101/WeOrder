@@ -115,3 +115,14 @@ export interface OrderTotals {
   achievementRate: number;
   allMembersHaveOrders: boolean;
 }
+
+export interface InAppNotification {
+  id: string;
+  userId: string;
+  title: string;
+  body: string;
+  type: 'CHAT' | 'ROOM_STATUS' | 'SETTLEMENT';
+  targetId: string | null;
+  isRead: boolean;
+  createdAt: string;
+}

@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, LogOut, Home as HomeIcon } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
+import NotificationBell from '../notification/NotificationBell';
 
 interface HeaderProps {
   title: string;
@@ -13,6 +14,7 @@ interface HeaderProps {
 export default function Header({ title, showBack = false, showHome = false, showLogout = false, right }: HeaderProps) {
   const navigate = useNavigate();
   const logout = useAuthStore((s) => s.logout);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   return (
     <header className="sticky top-0 z-40 bg-white border-b border-gray-100 px-4 h-14 flex items-center justify-between">
@@ -36,6 +38,7 @@ export default function Header({ title, showBack = false, showHome = false, show
             <HomeIcon size={18} className="text-gray-500" />
           </button>
         )}
+        {isAuthenticated && <NotificationBell />}
         {right}
         {showLogout && (
           <button

@@ -20,6 +20,9 @@ export function setupSocket(io: Server): void {
   io.on('connection', (socket: Socket) => {
     const userId: string = socket.data.userId;
 
+    // Join private user room for targeted notifications
+    socket.join(`user:${userId}`);
+
     socket.on('room:join', async (roomId: string) => {
       const member = await prisma.roomMember.findUnique({
         where: { roomId_userId: { roomId, userId } },

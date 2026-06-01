@@ -18,6 +18,7 @@ import HomeScreen from './src/screens/HomeScreen';
 import CreateRoomScreen from './src/screens/CreateRoomScreen';
 import RoomDetailScreen from './src/screens/RoomDetailScreen';
 import MyOrdersScreen from './src/screens/MyOrdersScreen';
+import NotificationScreen from './src/screens/NotificationScreen';
 
 const Stack = createNativeStackNavigator();
 const queryClient = new QueryClient();
@@ -36,6 +37,7 @@ function RootNavigator() {
           <Stack.Screen name="RoomEdit" component={CreateRoomScreen} />
           <Stack.Screen name="RoomDetail" component={RoomDetailScreen} />
           <Stack.Screen name="MyOrders" component={MyOrdersScreen} />
+          <Stack.Screen name="Notifications" component={NotificationScreen} />
         </Stack.Group>
       )}
     </Stack.Navigator>
