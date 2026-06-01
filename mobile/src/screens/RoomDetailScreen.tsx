@@ -49,9 +49,11 @@ export default function RoomDetailScreen() {
   const { messages, setMessages, orderTotals, setOrderTotals } = useRoomStore();
   const { sendMessage, sendDeliveryArriving } = useSocket(id);
 
-  const [tab, setTab] = useState<Tab>("order");
   const [chatInput, setChatInput] = useState("");
   const scrollViewRef = useRef<ScrollView>(null);
+
+  const initialTab = route.params?.tab || "order";
+  const [tab, setTab] = useState<Tab>(initialTab);
 
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [isUserProfileModalOpen, setIsUserProfileModalOpen] = useState(false);
@@ -72,6 +74,12 @@ export default function RoomDetailScreen() {
     enabled: !!id && !!room?.settlement,
     retry: false,
   });
+
+  useEffect(() => {
+    if (route.params?.tab) {
+      setTab(route.params.tab);
+    }
+  }, [route.params?.tab]);
 
   useEffect(() => {
     if (!id) return;
@@ -485,7 +493,8 @@ export default function RoomDetailScreen() {
           )}
 
           {isHost &&
-            ["ORDERING", "ORDERED", "SETTLED"].includes(room.status) && (
+            (["ORDERING", "ORDERED"].includes(room.status) ||
+              (room.status === "SETTLED" && !hasReviewed)) && (
               <View className="bg-amber-50 border border-amber-200 rounded-2xl p-4 gap-3">
                 <View>
                   <Text className="text-sm font-bold text-amber-800">

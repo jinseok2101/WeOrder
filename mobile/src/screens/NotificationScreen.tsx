@@ -49,7 +49,13 @@ export default function NotificationScreen() {
       readMutation.mutate(n.id);
     }
     if (n.targetId) {
-      navigation.navigate('RoomDetail', { id: n.targetId });
+      if (n.type === 'CHAT') {
+        navigation.navigate('RoomDetail', { id: n.targetId, tab: 'chat' });
+      } else if (n.type === 'SETTLEMENT') {
+        navigation.navigate('RoomDetail', { id: n.targetId, tab: 'settlement' });
+      } else {
+        navigation.navigate('RoomDetail', { id: n.targetId });
+      }
     }
   };
 

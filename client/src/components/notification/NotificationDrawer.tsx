@@ -54,7 +54,13 @@ export default function NotificationDrawer({ isOpen, onClose, notifications }: N
     }
     onClose();
     if (n.targetId) {
-      navigate(`/rooms/${n.targetId}`);
+      let url = `/rooms/${n.targetId}`;
+      if (n.type === 'CHAT') {
+        url = `/rooms/${n.targetId}?tab=chat`;
+      } else if (n.type === 'SETTLEMENT') {
+        url = `/rooms/${n.targetId}?tab=settlement`;
+      }
+      navigate(url);
     }
   };
 

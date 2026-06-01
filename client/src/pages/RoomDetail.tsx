@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Users,
@@ -31,13 +31,15 @@ type Tab = "order" | "chat" | "settlement";
 export default function RoomDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
   const { messages, setMessages, addMessage, orderTotals, setOrderTotals } =
     useRoomStore();
   const { sendMessage, sendDeliveryArriving } = useSocket(id);
 
-  const [tab, setTab] = useState<Tab>("order");
+  const initialTab = (searchParams.get("tab") as Tab) || "order";
+  const [tab, setTab] = useState<Tab>(initialTab);
   const [chatInput, setChatInput] = useState("");
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -80,6 +82,13 @@ export default function RoomDetail() {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    const tabParam = searchParams.get("tab") as Tab;
+    if (tabParam && ["order", "chat", "settlement"].includes(tabParam)) {
+      setTab(tabParam);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (room) {
@@ -444,7 +453,9 @@ export default function RoomDetail() {
           </div>
         )}
 
-        {isHost && ["ORDERING", "ORDERED", "SETTLED"].includes(room.status) && (
+        {isHost &&
+          (["ORDERING", "ORDERED"].includes(room.status) ||
+            (room.status === "SETTLED" && !hasReviewed)) && (
           <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 space-y-3">
             <div>
               <h3 className="text-sm font-bold text-amber-800 flex items-center gap-1.5">
