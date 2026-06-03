@@ -3,6 +3,7 @@ import { prisma } from '../prisma';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { getIo } from '../io';
 import { notificationService } from '../services/notificationService';
+import { roomDetailInclude } from './rooms';
 
 const router = Router();
 
@@ -71,6 +72,7 @@ router.patch('/:id/shares/:userId/paid', authenticate, async (req: AuthRequest, 
 router.patch('/:id/shares/:userId/confirm', authenticate, async (req: AuthRequest, res) => {
   try {
     const { id, userId } = req.params;
+    const io = getIo();
 
     const settlement = await prisma.settlement.findUnique({
       where: { id },
@@ -92,10 +94,17 @@ router.patch('/:id/shares/:userId/confirm', authenticate, async (req: AuthReques
     if (allConfirmed) {
       await prisma.settlement.update({ where: { id }, data: { status: 'COMPLETED' } });
       await prisma.room.update({ where: { id: settlement.roomId }, data: { status: 'SETTLED' } });
+      
+      const updatedRoom = await prisma.room.findUnique({
+        where: { id: settlement.roomId },
+        include: roomDetailInclude(),
+      });
+      if (updatedRoom) {
+        io.to(settlement.roomId).emit('room:updated', updatedRoom);
+      }
     }
 
     const updated = await getFullSettlement(id);
-    const io = getIo();
     io.to(settlement.roomId).emit('settlement:updated', updated);
 
     // 입금 확인 완료 알림 발송 (송금한 멤버에게)

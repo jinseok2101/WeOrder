@@ -82,10 +82,12 @@ export function useSocket(roomId?: string) {
         return { ...old, settlement, status: 'ORDERED' as const };
       });
       queryClient.setQueryData(['settlement', roomId], settlement);
+      queryClient.invalidateQueries({ queryKey: ['room', roomId] });
     };
 
     const onSettlementUpdated = (settlement: Settlement) => {
       queryClient.setQueryData(['settlement', roomId], settlement);
+      queryClient.invalidateQueries({ queryKey: ['room', roomId] });
     };
 
     const onDeliveryArriving = ({ roomId: rId, minutes }: { roomId: string; minutes: number }) => {

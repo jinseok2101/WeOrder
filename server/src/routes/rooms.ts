@@ -1,36 +1,73 @@
-import { Router } from 'express';
-import { prisma } from '../prisma';
-import { authenticate, AuthRequest } from '../middleware/auth';
-import { getIo } from '../io';
-import { haversineDistance, calcOrderTotals } from '../services/roomService';
-import { createSettlement } from '../services/settlementService';
-import { notificationService } from '../services/notificationService';
+import { Router } from "express";
+import { prisma } from "../prisma";
+import { authenticate, AuthRequest } from "../middleware/auth";
+import { getIo } from "../io";
+import { haversineDistance, calcOrderTotals } from "../services/roomService";
+import { createSettlement } from "../services/settlementService";
+import { notificationService } from "../services/notificationService";
 
 const router = Router();
 
-function roomDetailInclude() {
+export function roomDetailInclude() {
   return {
-    host: { select: { id: true, nickname: true, tossId: true, kakaoPayLink: true, bankAccount: true, trustScore: true, reviewCount: true } },
+    host: {
+      select: {
+        id: true,
+        nickname: true,
+        tossId: true,
+        kakaoPayLink: true,
+        bankAccount: true,
+        trustScore: true,
+        reviewCount: true,
+      },
+    },
     members: {
-      include: { user: { select: { id: true, nickname: true, trustScore: true, reviewCount: true } } },
-      orderBy: { joinedAt: 'asc' as const },
+      include: {
+        user: {
+          select: {
+            id: true,
+            nickname: true,
+            trustScore: true,
+            reviewCount: true,
+          },
+        },
+      },
+      orderBy: { joinedAt: "asc" as const },
     },
     orderItems: {
-      include: { user: { select: { id: true, nickname: true, trustScore: true, reviewCount: true } } },
-      orderBy: { createdAt: 'asc' as const },
+      include: {
+        user: {
+          select: {
+            id: true,
+            nickname: true,
+            trustScore: true,
+            reviewCount: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "asc" as const },
     },
     settlement: {
       include: {
         shares: {
-          include: { user: { select: { id: true, nickname: true, trustScore: true, reviewCount: true } } },
-          orderBy: { totalAmount: 'desc' as const },
+          include: {
+            user: {
+              select: {
+                id: true,
+                nickname: true,
+                trustScore: true,
+                reviewCount: true,
+              },
+            },
+          },
+          orderBy: { totalAmount: "desc" as const },
         },
       },
     },
   };
 }
 
-router.get('/', authenticate, async (req: AuthRequest, res) => {
+router.get("/", authenticate, async (req: AuthRequest, res) => {
   try {
     const lat = parseFloat(req.query.lat as string);
     const lng = parseFloat(req.query.lng as string);
@@ -43,16 +80,24 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
 
     const rooms = await prisma.room.findMany({
       where: {
-        status: { in: ['OPEN', 'ORDERING'] },
+        status: { in: ["OPEN", "ORDERING"] },
         deadline: { gt: new Date() },
         ...dongFilter,
       },
       include: {
-        host: { select: { id: true, nickname: true, tossId: true, kakaoPayLink: true, bankAccount: true } },
+        host: {
+          select: {
+            id: true,
+            nickname: true,
+            tossId: true,
+            kakaoPayLink: true,
+            bankAccount: true,
+          },
+        },
         members: true,
         orderItems: true,
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
 
     const FALLBACK_RADIUS_KM = 5.0; // 동 이름 없는 방의 보조 거리 필터
@@ -61,14 +106,18 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
       .filter((room) => {
         if (!hasCoords) return true;
 
-        const sameDong = dongName && room.dongName && room.dongName === dongName;
+        const sameDong =
+          dongName && room.dongName && room.dongName === dongName;
 
         // 동 이름이 일치하면 거리 무관하게 표시 (같은 동네면 무조건 노출)
         if (sameDong) return true;
 
         // 동 이름 정보가 없는 방은 보조 반경(5km) 이내이면 표시
         if (!room.dongName) {
-          return haversineDistance(lat, lng, room.latitude, room.longitude) <= FALLBACK_RADIUS_KM;
+          return (
+            haversineDistance(lat, lng, room.latitude, room.longitude) <=
+            FALLBACK_RADIUS_KM
+          );
         }
 
         // 동 이름이 다른 방은 제외
@@ -76,9 +125,15 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
       })
       .map((room) => {
         const distance = hasCoords
-          ? Math.round(haversineDistance(lat, lng, room.latitude, room.longitude) * 100) / 100
+          ? Math.round(
+              haversineDistance(lat, lng, room.latitude, room.longitude) * 100,
+            ) / 100
           : null;
-        const totals = calcOrderTotals(room.orderItems, room.minimumOrder, room.deliveryFee);
+        const totals = calcOrderTotals(
+          room.orderItems,
+          room.minimumOrder,
+          room.deliveryFee,
+        );
         return {
           id: room.id,
           title: room.title,
@@ -101,11 +156,11 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
 
     res.json(result);
   } catch {
-    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+    res.status(500).json({ message: "서버 오류가 발생했습니다." });
   }
 });
 
-router.get('/mine', authenticate, async (req: AuthRequest, res) => {
+router.get("/mine", authenticate, async (req: AuthRequest, res) => {
   try {
     const memberships = await prisma.roomMember.findMany({
       where: { userId: req.userId },
@@ -116,20 +171,20 @@ router.get('/mine', authenticate, async (req: AuthRequest, res) => {
             members: true,
             settlement: { include: { shares: true } },
             reviews: {
-              where: { reviewerId: req.userId }
-            }
+              where: { reviewerId: req.userId },
+            },
           },
         },
       },
-      orderBy: { joinedAt: 'desc' },
+      orderBy: { joinedAt: "desc" },
     });
     res.json(memberships.map((m) => m.room));
   } catch {
-    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+    res.status(500).json({ message: "서버 오류가 발생했습니다." });
   }
 });
 
-router.post('/', authenticate, async (req: AuthRequest, res) => {
+router.post("/", authenticate, async (req: AuthRequest, res) => {
   try {
     const {
       title,
@@ -144,8 +199,20 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
       deadline,
     } = req.body;
 
-    if (!title || !restaurantName || deliveryFee === undefined || deliveryFee === null || !minimumOrder || !pickupLocation || !latitude || !longitude || !deadline) {
-      return res.status(400).json({ message: '필수 항목을 모두 입력해주세요.' });
+    if (
+      !title ||
+      !restaurantName ||
+      deliveryFee === undefined ||
+      deliveryFee === null ||
+      !minimumOrder ||
+      !pickupLocation ||
+      !latitude ||
+      !longitude ||
+      !deadline
+    ) {
+      return res
+        .status(400)
+        .json({ message: "필수 항목을 모두 입력해주세요." });
     }
 
     const room = await prisma.room.create({
@@ -155,8 +222,9 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
         restaurantUrl,
         deliveryFee: Number(deliveryFee),
         minimumOrder: Number(minimumOrder),
-        pickupLocation: typeof pickupLocation === 'string' ? pickupLocation : '지정되지 않음',
-        dongName: typeof dongName === 'string' ? dongName : null,
+        pickupLocation:
+          typeof pickupLocation === "string" ? pickupLocation : "지정되지 않음",
+        dongName: typeof dongName === "string" ? dongName : null,
         latitude: Number(latitude),
         longitude: Number(longitude),
         deadline: new Date(deadline),
@@ -175,11 +243,11 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
 
     res.status(201).json(fullRoom);
   } catch {
-    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+    res.status(500).json({ message: "서버 오류가 발생했습니다." });
   }
 });
 
-router.patch('/:id', authenticate, async (req: AuthRequest, res) => {
+router.patch("/:id", authenticate, async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
     const {
@@ -194,10 +262,14 @@ router.patch('/:id', authenticate, async (req: AuthRequest, res) => {
     } = req.body;
 
     const room = await prisma.room.findUnique({ where: { id } });
-    if (!room) return res.status(404).json({ message: '방을 찾을 수 없습니다.' });
-    if (room.hostId !== req.userId) return res.status(403).json({ message: '방장만 수정할 수 있습니다.' });
-    if (['ORDERED', 'SETTLED', 'CANCELLED'].includes(room.status)) {
-      return res.status(400).json({ message: '주문이 완료된 방은 수정할 수 없습니다.' });
+    if (!room)
+      return res.status(404).json({ message: "방을 찾을 수 없습니다." });
+    if (room.hostId !== req.userId)
+      return res.status(403).json({ message: "방장만 수정할 수 있습니다." });
+    if (["ORDERED", "SETTLED", "CANCELLED"].includes(room.status)) {
+      return res
+        .status(400)
+        .json({ message: "주문이 완료된 방은 수정할 수 없습니다." });
     }
 
     const updated = await prisma.room.update({
@@ -209,51 +281,59 @@ router.patch('/:id', authenticate, async (req: AuthRequest, res) => {
         deliveryFee: deliveryFee ? Number(deliveryFee) : undefined,
         minimumOrder: minimumOrder ? Number(minimumOrder) : undefined,
         pickupLocation: pickupLocation ? String(pickupLocation) : undefined,
-        dongName: dongName !== undefined ? (dongName ? String(dongName) : null) : undefined,
+        dongName:
+          dongName !== undefined
+            ? dongName
+              ? String(dongName)
+              : null
+            : undefined,
         deadline: deadline ? new Date(deadline) : undefined,
       },
       include: roomDetailInclude(),
     });
 
-    getIo().to(id).emit('room:updated', updated);
+    getIo().to(id).emit("room:updated", updated);
     res.json(updated);
   } catch {
-    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+    res.status(500).json({ message: "서버 오류가 발생했습니다." });
   }
 });
 
-router.delete('/:id', authenticate, async (req: AuthRequest, res) => {
+router.delete("/:id", authenticate, async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
     const room = await prisma.room.findUnique({ where: { id } });
-    if (!room) return res.status(404).json({ message: '방을 찾을 수 없습니다.' });
-    if (room.hostId !== req.userId) return res.status(403).json({ message: '방장만 삭제할 수 있습니다.' });
+    if (!room)
+      return res.status(404).json({ message: "방을 찾을 수 없습니다." });
+    if (room.hostId !== req.userId)
+      return res.status(403).json({ message: "방장만 삭제할 수 있습니다." });
 
     // 방 삭제 (Prisma schema에 onDelete: Cascade가 설정되어 있어야 연관 데이터가 같이 삭제됨)
     await prisma.room.delete({
       where: { id },
     });
 
-    res.json({ message: '방이 성공적으로 삭제되었습니다.' });
+    res.json({ message: "방이 성공적으로 삭제되었습니다." });
   } catch {
-    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+    res.status(500).json({ message: "서버 오류가 발생했습니다." });
   }
 });
 
-router.get('/:id', authenticate, async (req: AuthRequest, res) => {
+router.get("/:id", authenticate, async (req: AuthRequest, res) => {
   try {
     const room = await prisma.room.findUnique({
       where: { id: req.params.id },
       include: roomDetailInclude(),
     });
-    if (!room) return res.status(404).json({ message: '방을 찾을 수 없습니다.' });
+    if (!room)
+      return res.status(404).json({ message: "방을 찾을 수 없습니다." });
     res.json(room);
   } catch {
-    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+    res.status(500).json({ message: "서버 오류가 발생했습니다." });
   }
 });
 
-router.post('/:id/join', authenticate, async (req: AuthRequest, res) => {
+router.post("/:id/join", authenticate, async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
     const userId = req.userId!;
@@ -262,14 +342,18 @@ router.post('/:id/join', authenticate, async (req: AuthRequest, res) => {
       where: { id },
       include: { members: true },
     });
-    if (!room) return res.status(404).json({ message: '방을 찾을 수 없습니다.' });
-    if (new Date() > room.deadline) return res.status(400).json({ message: '이미 마감된 방입니다.' });
-    if (room.status !== 'OPEN') return res.status(400).json({ message: '현재 참여할 수 없는 방입니다.' });
+    if (!room)
+      return res.status(404).json({ message: "방을 찾을 수 없습니다." });
+    if (new Date() > room.deadline)
+      return res.status(400).json({ message: "이미 마감된 방입니다." });
+    if (room.status !== "OPEN")
+      return res.status(400).json({ message: "현재 참여할 수 없는 방입니다." });
 
     const existing = await prisma.roomMember.findUnique({
       where: { roomId_userId: { roomId: id, userId } },
     });
-    if (existing) return res.status(400).json({ message: '이미 참여 중인 방입니다.' });
+    if (existing)
+      return res.status(400).json({ message: "이미 참여 중인 방입니다." });
 
     await prisma.roomMember.create({ data: { roomId: id, userId } });
 
@@ -279,15 +363,19 @@ router.post('/:id/join', authenticate, async (req: AuthRequest, res) => {
     });
 
     const sysMsg = await prisma.chatMessage.create({
-      data: { roomId: id, content: `${user?.nickname}님이 참여했습니다.`, type: 'SYSTEM' },
+      data: {
+        roomId: id,
+        content: `${user?.nickname}님이 참여했습니다.`,
+        type: "SYSTEM",
+      },
     });
 
     const io = getIo();
-    io.to(id).emit('room:member_joined', { userId, nickname: user?.nickname });
-    io.to(id).emit('chat:message', {
+    io.to(id).emit("room:member_joined", { userId, nickname: user?.nickname });
+    io.to(id).emit("chat:message", {
       id: sysMsg.id,
       content: sysMsg.content,
-      type: 'SYSTEM',
+      type: "SYSTEM",
       createdAt: sysMsg.createdAt.toISOString(),
     });
 
@@ -297,31 +385,38 @@ router.post('/:id/join', authenticate, async (req: AuthRequest, res) => {
         [room.hostId],
         {
           title: `WeOrder 배달방 새 멤버`,
-          body: `${user?.nickname || '새 참가자'}님이 '${room.restaurantName}' 방에 참가하셨습니다!`,
-          data: { roomId: id, type: 'roomStatus' }
+          body: `${user?.nickname || "새 참가자"}님이 '${room.restaurantName}' 방에 참가하셨습니다!`,
+          data: { roomId: id, type: "roomStatus" },
         },
-        'roomStatus'
+        "roomStatus",
       );
     }
 
-    res.json({ message: '방에 참여했습니다.' });
+    res.json({ message: "방에 참여했습니다." });
   } catch {
-    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+    res.status(500).json({ message: "서버 오류가 발생했습니다." });
   }
 });
 
-router.post('/:id/leave', authenticate, async (req: AuthRequest, res) => {
+router.post("/:id/leave", authenticate, async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
     const userId = req.userId!;
 
     const room = await prisma.room.findUnique({ where: { id } });
-    if (!room) return res.status(404).json({ message: '방을 찾을 수 없습니다.' });
+    if (!room)
+      return res.status(404).json({ message: "방을 찾을 수 없습니다." });
     if (room.hostId === userId) {
-      return res.status(400).json({ message: '방장은 나갈 수 없습니다. 방을 취소해주세요.' });
+      return res
+        .status(400)
+        .json({ message: "방장은 나갈 수 없습니다. 방을 취소해주세요." });
     }
-    if (room.status !== 'OPEN') {
-      return res.status(400).json({ message: '주문이 이미 시작되었거나 완료되어 방을 나갈 수 없습니다.' });
+    if (room.status !== "OPEN") {
+      return res
+        .status(400)
+        .json({
+          message: "주문이 이미 시작되었거나 완료되어 방을 나갈 수 없습니다.",
+        });
     }
 
     await prisma.roomMember.delete({
@@ -339,59 +434,79 @@ router.post('/:id/leave', authenticate, async (req: AuthRequest, res) => {
     });
 
     const sysMsg = await prisma.chatMessage.create({
-      data: { roomId: id, content: `${user?.nickname}님이 퇴장했습니다.`, type: 'SYSTEM' },
+      data: {
+        roomId: id,
+        content: `${user?.nickname}님이 퇴장했습니다.`,
+        type: "SYSTEM",
+      },
     });
 
     const io = getIo();
-    
+
     // 방 상태 최신화를 위해 전체 정보 다시 조회 후 전송 (최소주문금액 달성률 등 업데이트)
     const updatedRoom = await prisma.room.findUnique({
       where: { id },
       include: roomDetailInclude(),
     });
     if (updatedRoom) {
-      io.to(id).emit('room:updated', updatedRoom);
+      io.to(id).emit("room:updated", updatedRoom);
     }
 
-    io.to(id).emit('room:member_left', { userId });
-    io.to(id).emit('chat:message', {
+    io.to(id).emit("room:member_left", { userId });
+    io.to(id).emit("chat:message", {
       id: sysMsg.id,
       content: sysMsg.content,
-      type: 'SYSTEM',
+      type: "SYSTEM",
       createdAt: sysMsg.createdAt.toISOString(),
     });
 
-    res.json({ message: '방에서 나왔습니다.' });
+    res.json({ message: "방에서 나왔습니다." });
   } catch {
-    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+    res.status(500).json({ message: "서버 오류가 발생했습니다." });
   }
 });
 
-router.patch('/:id/status', authenticate, async (req: AuthRequest, res) => {
+router.patch("/:id/status", authenticate, async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
 
-    const room = await prisma.room.findUnique({ 
+    const room = await prisma.room.findUnique({
       where: { id },
-      include: { orderItems: true, members: true }
+      include: { orderItems: true, members: true },
     });
-    if (!room) return res.status(404).json({ message: '방을 찾을 수 없습니다.' });
-    if (room.hostId !== req.userId) return res.status(403).json({ message: '방장만 상태를 변경할 수 있습니다.' });
+    if (!room)
+      return res.status(404).json({ message: "방을 찾을 수 없습니다." });
+    if (room.hostId !== req.userId)
+      return res
+        .status(403)
+        .json({ message: "방장만 상태를 변경할 수 있습니다." });
 
-    if (status === 'ORDERING') {
-      const totalMenuAmount = room.orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    if (status === "ORDERING") {
+      const totalMenuAmount = room.orderItems.reduce(
+        (sum, item) => sum + item.price * item.quantity,
+        0,
+      );
       if (totalMenuAmount < room.minimumOrder) {
-        return res.status(400).json({ message: '최소 주문 금액을 채워야 주문을 시작할 수 있습니다.' });
+        return res
+          .status(400)
+          .json({
+            message: "최소 주문 금액을 채워야 주문을 시작할 수 있습니다.",
+          });
       }
 
       // 모든 멤버가 최소 1개 이상의 메뉴를 주문했는지 확인
-      const allMembersHaveOrders = room.members.every((m) => 
-        room.orderItems.some((item) => item.userId === m.userId)
+      const allMembersHaveOrders = room.members.every((m) =>
+        room.orderItems.some((item) => item.userId === m.userId),
       );
 
       if (!allMembersHaveOrders) {
-        return res.status(400).json({ message: '방에 있는 모든 사람이 메뉴를 하나 이상 선택해야 주문이 가능합니다.' });
+        return res
+          .status(400)
+          .json({
+            message:
+              "방에 있는 모든 사람이 메뉴를 하나 이상 선택해야 주문이 가능합니다.",
+          });
       }
     }
 
@@ -402,24 +517,24 @@ router.patch('/:id/status', authenticate, async (req: AuthRequest, res) => {
     });
 
     const io = getIo();
-    io.to(id).emit('room:updated', updated);
+    io.to(id).emit("room:updated", updated);
 
     // 참가자들에게 방 상태 변경 푸시 알림 발송 (자신이 변경한 것은 제외)
     const members = await prisma.roomMember.findMany({
       where: { roomId: id, userId: { not: req.userId } },
-      select: { userId: true }
+      select: { userId: true },
     });
     const memberIds = members.map((m) => m.userId);
 
     if (memberIds.length > 0) {
-      let title = `🍔 WeOrder 배달방 알림`;
-      let body = '';
+      let title = `WeOrder 배달방 알림`;
+      let body = "";
 
-      if (status === 'ORDERING') {
+      if (status === "ORDERING") {
         body = `'${updated.restaurantName}' 배달 주문이 마감 및 시작되었습니다!`;
-      } else if (status === 'ORDERED') {
+      } else if (status === "ORDERED") {
         body = `'${updated.restaurantName}' 방장님이 주문 접수를 마쳤습니다.`;
-      } else if (status === 'CANCELLED') {
+      } else if (status === "CANCELLED") {
         body = `'${updated.restaurantName}' 방이 방장에 의해 취소되었습니다.`;
       }
 
@@ -429,43 +544,53 @@ router.patch('/:id/status', authenticate, async (req: AuthRequest, res) => {
           {
             title,
             body,
-            data: { roomId: id, type: 'roomStatus' }
+            data: { roomId: id, type: "roomStatus" },
           },
-          'roomStatus'
+          "roomStatus",
         );
       }
     }
 
-    if (status === 'CANCELLED') {
+    if (status === "CANCELLED") {
       const sysMsg = await prisma.chatMessage.create({
-        data: { roomId: id, content: '방장이 방을 취소했습니다.', type: 'SYSTEM' },
+        data: {
+          roomId: id,
+          content: "방장이 방을 취소했습니다.",
+          type: "SYSTEM",
+        },
       });
-      io.to(id).emit('chat:message', {
+      io.to(id).emit("chat:message", {
         id: sysMsg.id,
         content: sysMsg.content,
-        type: 'SYSTEM',
+        type: "SYSTEM",
         createdAt: sysMsg.createdAt.toISOString(),
       });
     }
 
     res.json(updated);
   } catch {
-    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+    res.status(500).json({ message: "서버 오류가 발생했습니다." });
   }
 });
 
-router.post('/:roomId/orders', authenticate, async (req: AuthRequest, res) => {
+router.post("/:roomId/orders", authenticate, async (req: AuthRequest, res) => {
   try {
     const { roomId } = req.params;
     const { name, price, quantity, options } = req.body;
     const userId = req.userId!;
 
-    if (!name || !price) return res.status(400).json({ message: '메뉴 이름과 가격을 입력해주세요.' });
+    if (!name || !price)
+      return res
+        .status(400)
+        .json({ message: "메뉴 이름과 가격을 입력해주세요." });
 
     const member = await prisma.roomMember.findUnique({
       where: { roomId_userId: { roomId, userId } },
     });
-    if (!member) return res.status(403).json({ message: '방 참여자만 주문을 추가할 수 있습니다.' });
+    if (!member)
+      return res
+        .status(403)
+        .json({ message: "방 참여자만 주문을 추가할 수 있습니다." });
 
     const item = await prisma.orderItem.create({
       data: {
@@ -484,24 +609,26 @@ router.post('/:roomId/orders', authenticate, async (req: AuthRequest, res) => {
       where: { id: roomId },
       select: { minimumOrder: true, deliveryFee: true, deadline: true },
     });
-    if (!room) return res.status(404).json({ message: '방을 찾을 수 없습니다.' });
-    if (new Date() > room.deadline) return res.status(400).json({ message: '이미 마감된 방입니다.' });
+    if (!room)
+      return res.status(404).json({ message: "방을 찾을 수 없습니다." });
+    if (new Date() > room.deadline)
+      return res.status(400).json({ message: "이미 마감된 방입니다." });
     const totals = calcOrderTotals(
       allItems,
       room?.minimumOrder || 0,
-      room?.deliveryFee || 0
+      room?.deliveryFee || 0,
     );
 
     const io = getIo();
-    io.to(roomId).emit('order:item_added', { item, totals });
+    io.to(roomId).emit("order:item_added", { item, totals });
 
     res.status(201).json({ item, totals });
   } catch {
-    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+    res.status(500).json({ message: "서버 오류가 발생했습니다." });
   }
 });
 
-router.get('/:roomId/chat', authenticate, async (req: AuthRequest, res) => {
+router.get("/:roomId/chat", authenticate, async (req: AuthRequest, res) => {
   try {
     const { roomId } = req.params;
     const cursor = req.query.cursor as string | undefined;
@@ -510,7 +637,9 @@ router.get('/:roomId/chat', authenticate, async (req: AuthRequest, res) => {
       where: { roomId_userId: { roomId, userId: req.userId! } },
     });
     if (!member) {
-      return res.status(403).json({ message: '방 참여자만 채팅을 볼 수 있습니다.' });
+      return res
+        .status(403)
+        .json({ message: "방 참여자만 채팅을 볼 수 있습니다." });
     }
 
     const messages = await prisma.chatMessage.findMany({
@@ -519,70 +648,80 @@ router.get('/:roomId/chat', authenticate, async (req: AuthRequest, res) => {
         ...(cursor ? { createdAt: { lt: new Date(cursor) } } : {}),
       },
       include: { user: { select: { id: true, nickname: true } } },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       take: 50,
     });
 
     res.json(messages.reverse());
   } catch {
-    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+    res.status(500).json({ message: "서버 오류가 발생했습니다." });
   }
 });
 
-router.post('/:roomId/settlement', authenticate, async (req: AuthRequest, res) => {
-  try {
-    const { roomId } = req.params;
-    const settlement = await createSettlement(roomId, req.userId!);
+router.post(
+  "/:roomId/settlement",
+  authenticate,
+  async (req: AuthRequest, res) => {
+    try {
+      const { roomId } = req.params;
+      const settlement = await createSettlement(roomId, req.userId!);
 
-    const io = getIo();
-    io.to(roomId).emit('settlement:created', settlement);
+      const io = getIo();
+      io.to(roomId).emit("settlement:created", settlement);
 
-    // 다른 멤버들에게 정산 시작 푸시 알림 발송 (비동기 수행)
-    const room = await prisma.room.findUnique({
-      where: { id: roomId },
-      select: { restaurantName: true }
-    });
-    const members = await prisma.roomMember.findMany({
-      where: { roomId, userId: { not: req.userId } },
-      select: { userId: true }
-    });
-    const memberIds = members.map((m) => m.userId);
+      // 다른 멤버들에게 정산 시작 푸시 알림 발송 (비동기 수행)
+      const room = await prisma.room.findUnique({
+        where: { id: roomId },
+        select: { restaurantName: true },
+      });
+      const members = await prisma.roomMember.findMany({
+        where: { roomId, userId: { not: req.userId } },
+        select: { userId: true },
+      });
+      const memberIds = members.map((m) => m.userId);
 
-    if (memberIds.length > 0) {
-      notificationService.sendPushNotification(
-        memberIds,
-        {
-          title: `💰 WeOrder 배달 정산 요청`,
-          body: `'${room?.restaurantName || 'WeOrder'}' 방의 배달비 정산이 시작되었습니다! 내역을 확인해 주세요.`,
-          data: { roomId, type: 'settlement' }
-        },
-        'settlement'
-      );
+      if (memberIds.length > 0) {
+        notificationService.sendPushNotification(
+          memberIds,
+          {
+            title: `💰 WeOrder 배달 정산 요청`,
+            body: `'${room?.restaurantName || "WeOrder"}' 방의 배달비 정산이 시작되었습니다! 내역을 확인해 주세요.`,
+            data: { roomId, type: "settlement" },
+          },
+          "settlement",
+        );
+      }
+
+      res.status(201).json(settlement);
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error ? err.message : "서버 오류가 발생했습니다.";
+      res.status(400).json({ message: msg });
     }
+  },
+);
 
-    res.status(201).json(settlement);
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : '서버 오류가 발생했습니다.';
-    res.status(400).json({ message: msg });
-  }
-});
-
-router.get('/:roomId/settlement', authenticate, async (req: AuthRequest, res) => {
-  try {
-    const settlement = await prisma.settlement.findUnique({
-      where: { roomId: req.params.roomId },
-      include: {
-        shares: {
-          include: { user: { select: { id: true, nickname: true } } },
-          orderBy: { totalAmount: 'desc' },
+router.get(
+  "/:roomId/settlement",
+  authenticate,
+  async (req: AuthRequest, res) => {
+    try {
+      const settlement = await prisma.settlement.findUnique({
+        where: { roomId: req.params.roomId },
+        include: {
+          shares: {
+            include: { user: { select: { id: true, nickname: true } } },
+            orderBy: { totalAmount: "desc" },
+          },
         },
-      },
-    });
-    if (!settlement) return res.status(404).json({ message: '정산 정보가 없습니다.' });
-    res.json(settlement);
-  } catch {
-    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
-  }
-});
+      });
+      if (!settlement)
+        return res.status(404).json({ message: "정산 정보가 없습니다." });
+      res.json(settlement);
+    } catch {
+      res.status(500).json({ message: "서버 오류가 발생했습니다." });
+    }
+  },
+);
 
 export default router;
