@@ -47,7 +47,6 @@ export default function RoomDetailScreen() {
   const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
   const { messages, setMessages, orderTotals, setOrderTotals } = useRoomStore();
-  const { sendMessage, sendDeliveryArriving } = useSocket(id);
 
   const [chatInput, setChatInput] = useState("");
   const scrollViewRef = useRef<ScrollView>(null);
@@ -68,6 +67,9 @@ export default function RoomDetailScreen() {
     enabled: !!id,
   });
 
+  const isMember = room ? (room.members || []).some((m) => m.userId === user?.id) : false;
+  const { sendMessage, sendDeliveryArriving } = useSocket(id, isMember);
+
   const { data: settlement } = useQuery({
     queryKey: ["settlement", id],
     queryFn: () => roomsApi.getSettlement(id!),
@@ -83,6 +85,7 @@ export default function RoomDetailScreen() {
 
   useEffect(() => {
     if (!id) return;
+    setMessages([]);
     roomsApi.getChat(id).then((msgs: ChatMessage[]) => setMessages(msgs));
   }, [id, setMessages]);
 
@@ -212,7 +215,6 @@ export default function RoomDetailScreen() {
   const isExpired = room.deadline
     ? new Date(room.deadline).getTime() < Date.now()
     : false;
-  const isMember = (room.members || []).some((m) => m.userId === user?.id);
   const isHost = room.hostId === user?.id;
   const canJoin = !isMember && room.status === "OPEN" && !isExpired;
   const canOrder =

@@ -6,7 +6,7 @@ import { useAuthStore } from '../store/authStore';
 import { useRoomStore } from '../store/roomStore';
 import { ChatMessage, OrderItem, OrderTotals, Room, Settlement } from '../types';
 
-export function useSocket(roomId?: string) {
+export function useSocket(roomId?: string, isMember?: boolean) {
   const token = useAuthStore((s) => s.token);
   const { addMessage, setOrderTotals } = useRoomStore();
   const queryClient = useQueryClient();
@@ -18,7 +18,7 @@ export function useSocket(roomId?: string) {
     const socket = connectSocket(token);
 
     const onConnect = () => {
-      if (roomId && joinedRef.current !== roomId) {
+      if (roomId && isMember && joinedRef.current !== roomId) {
         socket.emit('room:join', roomId);
         joinedRef.current = roomId;
       }
@@ -30,7 +30,9 @@ export function useSocket(roomId?: string) {
     socket.on('connect', onConnect);
 
     const onRoomUpdated = (room: Room) => {
-      queryClient.setQueryData(['room', roomId], room);
+      if (room.id === roomId) {
+        queryClient.setQueryData(['room', roomId], room);
+      }
     };
 
     const onMemberJoined = () => {
@@ -42,28 +44,34 @@ export function useSocket(roomId?: string) {
     };
 
     const onChatMessage = (msg: ChatMessage) => {
-      addMessage(msg);
+      if (msg.roomId === roomId) {
+        addMessage(msg);
+      }
     };
 
     const onItemAdded = ({ item, totals }: { item: OrderItem; totals: OrderTotals }) => {
-      queryClient.setQueryData(['room', roomId], (old: Room | undefined) => {
-        if (!old) return old;
-        const exists = (old.orderItems || []).some((i) => i.id === item.id);
-        if (exists) return old;
-        return { ...old, orderItems: [...(old.orderItems || []), item] };
-      });
-      setOrderTotals(totals);
+      if (item.roomId === roomId) {
+        queryClient.setQueryData(['room', roomId], (old: Room | undefined) => {
+          if (!old) return old;
+          const exists = (old.orderItems || []).some((i) => i.id === item.id);
+          if (exists) return old;
+          return { ...old, orderItems: [...(old.orderItems || []), item] };
+        });
+        setOrderTotals(totals);
+      }
     };
 
     const onItemUpdated = ({ item, totals }: { item: OrderItem; totals: OrderTotals }) => {
-      queryClient.setQueryData(['room', roomId], (old: Room | undefined) => {
-        if (!old) return old;
-        return {
-          ...old,
-          orderItems: (old.orderItems || []).map((i) => (i.id === item.id ? item : i)),
-        };
-      });
-      setOrderTotals(totals);
+      if (item.roomId === roomId) {
+        queryClient.setQueryData(['room', roomId], (old: Room | undefined) => {
+          if (!old) return old;
+          return {
+            ...old,
+            orderItems: (old.orderItems || []).map((i) => (i.id === item.id ? item : i)),
+          };
+        });
+        setOrderTotals(totals);
+      }
     };
 
     const onItemDeleted = ({ itemId, totals }: { itemId: string; totals: OrderTotals }) => {
@@ -78,17 +86,21 @@ export function useSocket(roomId?: string) {
     };
 
     const onSettlementCreated = (settlement: Settlement) => {
-      queryClient.setQueryData(['room', roomId], (old: Room | undefined) => {
-        if (!old) return old;
-        return { ...old, settlement, status: 'ORDERED' as const };
-      });
-      queryClient.setQueryData(['settlement', roomId], settlement);
-      queryClient.invalidateQueries({ queryKey: ['room', roomId] });
+      if (settlement.roomId === roomId) {
+        queryClient.setQueryData(['room', roomId], (old: Room | undefined) => {
+          if (!old) return old;
+          return { ...old, settlement, status: 'ORDERED' as const };
+        });
+        queryClient.setQueryData(['settlement', roomId], settlement);
+        queryClient.invalidateQueries({ queryKey: ['room', roomId] });
+      }
     };
 
     const onSettlementUpdated = (settlement: Settlement) => {
-      queryClient.setQueryData(['settlement', roomId], settlement);
-      queryClient.invalidateQueries({ queryKey: ['room', roomId] });
+      if (settlement.roomId === roomId) {
+        queryClient.setQueryData(['settlement', roomId], settlement);
+        queryClient.invalidateQueries({ queryKey: ['room', roomId] });
+      }
     };
 
     const onDeliveryArriving = ({ roomId: rId, minutes }: { roomId: string; minutes: number }) => {
@@ -133,7 +145,7 @@ export function useSocket(roomId?: string) {
       socket.off('settlement:updated', onSettlementUpdated);
       socket.off('delivery:arriving', onDeliveryArriving);
     };
-  }, [token, roomId, addMessage, setOrderTotals, queryClient]);
+  }, [token, roomId, isMember, addMessage, setOrderTotals, queryClient]);
 
   const sendMessage = (roomId: string, content: string) => {
     if (!token) return;

@@ -36,7 +36,6 @@ export default function RoomDetail() {
   const queryClient = useQueryClient();
   const { messages, setMessages, addMessage, orderTotals, setOrderTotals } =
     useRoomStore();
-  const { sendMessage, sendDeliveryArriving } = useSocket(id);
 
   const initialTab = (searchParams.get("tab") as Tab) || "order";
   const [tab, setTab] = useState<Tab>(initialTab);
@@ -56,6 +55,9 @@ export default function RoomDetail() {
     enabled: !!id,
   });
 
+  const isMember = room ? (room.members || []).some((m) => m.userId === user?.id) : false;
+  const { sendMessage, sendDeliveryArriving } = useSocket(id, isMember);
+
   const { data: settlement } = useQuery({
     queryKey: ["settlement", id],
     queryFn: () => roomsApi.getSettlement(id!),
@@ -65,6 +67,7 @@ export default function RoomDetail() {
 
   useEffect(() => {
     if (!id) return;
+    setMessages([]);
     roomsApi.getChat(id).then((msgs: ChatMessage[]) => setMessages(msgs));
   }, [id, setMessages]);
 
@@ -202,7 +205,6 @@ export default function RoomDetail() {
   const isExpired = room.deadline
     ? new Date(room.deadline).getTime() < Date.now()
     : false;
-  const isMember = (room.members || []).some((m) => m.userId === user?.id);
   const isHost = room.hostId === user?.id;
   const canJoin = !isMember && room.status === "OPEN" && !isExpired;
   const canOrder =
