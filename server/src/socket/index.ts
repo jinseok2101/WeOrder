@@ -56,6 +56,7 @@ export function setupSocket(io: Server): void {
 
         io.to(roomId).emit('chat:message', {
           id: message.id,
+          roomId: message.roomId,
           content: message.content,
           type: message.type,
           user: message.user,
@@ -140,6 +141,7 @@ export function setupSocket(io: Server): void {
         
         io.to(roomId).emit('chat:message', {
           id: systemMsg.id,
+          roomId: systemMsg.roomId,
           content: systemMsg.content,
           type: systemMsg.type,
           user: null,

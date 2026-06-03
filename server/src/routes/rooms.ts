@@ -374,6 +374,7 @@ router.post("/:id/join", authenticate, async (req: AuthRequest, res) => {
     io.to(id).emit("room:member_joined", { userId, nickname: user?.nickname });
     io.to(id).emit("chat:message", {
       id: sysMsg.id,
+      roomId: sysMsg.roomId,
       content: sysMsg.content,
       type: "SYSTEM",
       createdAt: sysMsg.createdAt.toISOString(),
@@ -455,6 +456,7 @@ router.post("/:id/leave", authenticate, async (req: AuthRequest, res) => {
     io.to(id).emit("room:member_left", { userId });
     io.to(id).emit("chat:message", {
       id: sysMsg.id,
+      roomId: sysMsg.roomId,
       content: sysMsg.content,
       type: "SYSTEM",
       createdAt: sysMsg.createdAt.toISOString(),
@@ -561,6 +563,7 @@ router.patch("/:id/status", authenticate, async (req: AuthRequest, res) => {
       });
       io.to(id).emit("chat:message", {
         id: sysMsg.id,
+        roomId: sysMsg.roomId,
         content: sysMsg.content,
         type: "SYSTEM",
         createdAt: sysMsg.createdAt.toISOString(),
