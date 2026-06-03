@@ -648,6 +648,7 @@ router.get("/:roomId/chat", authenticate, async (req: AuthRequest, res) => {
     const messages = await prisma.chatMessage.findMany({
       where: {
         roomId,
+        createdAt: { gte: member.joinedAt },
         ...(cursor ? { createdAt: { lt: new Date(cursor) } } : {}),
       },
       include: { user: { select: { id: true, nickname: true } } },
