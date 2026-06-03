@@ -84,10 +84,12 @@ export default function RoomDetailScreen() {
   }, [route.params?.tab]);
 
   useEffect(() => {
-    if (!id) return;
-    setMessages([]);
+    if (!id || !isMember) {
+      setMessages([]);
+      return;
+    }
     roomsApi.getChat(id).then((msgs: ChatMessage[]) => setMessages(msgs));
-  }, [id, setMessages]);
+  }, [id, isMember, setMessages]);
 
   useEffect(() => {
     const isRoomMember = (room?.members || []).some(
