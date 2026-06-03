@@ -84,8 +84,19 @@ self.addEventListener('notificationclick', (event) => {
 
   const data = event.notification.data || {};
   const roomId = data.roomId;
+  const type = data.type; // 'chat' or 'settlement'
+  
   // 클릭 시 알림 성격에 따라 해당 방이나 기본 경로로 리디렉션
-  const urlToOpen = roomId ? `/rooms/${roomId}` : '/';
+  let urlToOpen = '/';
+  if (roomId) {
+    if (type === 'chat') {
+      urlToOpen = `/rooms/${roomId}?tab=chat`;
+    } else if (type === 'settlement') {
+      urlToOpen = `/rooms/${roomId}?tab=settlement`;
+    } else {
+      urlToOpen = `/rooms/${roomId}`;
+    }
+  }
 
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {

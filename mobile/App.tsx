@@ -1,12 +1,13 @@
 import "./global.css";
 import React, { useEffect } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { View, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
 import { registerRootComponent } from 'expo';
+import * as Notifications from 'expo-notifications';
 
 import { useAuthStore } from './src/store/authStore';
 import { connectSocket } from './src/socket/socket';
@@ -22,6 +23,8 @@ import NotificationScreen from './src/screens/NotificationScreen';
 
 const Stack = createNativeStackNavigator();
 const queryClient = new QueryClient();
+
+export const navigationRef = createNavigationContainerRef();
 
 function RootNavigator() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -60,12 +63,47 @@ export default function App() {
         })
         .catch((err) => console.warn('프로필 동기화 실패:', err));
     }
+
+    // OS 상태바 푸시 알림 클릭 리스너 등록
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      const data = response.notification.request.content.data;
+      if (data && data.roomId) {
+        const roomId = data.roomId;
+        const type = data.type; // 'chat' or 'settlement'
+
+        const navigateToRoom = () => {
+          if (navigationRef.isReady()) {
+            navigationRef.navigate('RoomDetail', {
+              id: roomId,
+              tab: type === 'chat' ? 'chat' : type === 'settlement' ? 'settlement' : 'order'
+            });
+            return true;
+          }
+          return false;
+        };
+
+        // 네비게이터가 로드될 때까지 500ms 간격으로 자동 재시도
+        if (!navigateToRoom()) {
+          let attempts = 0;
+          const interval = setInterval(() => {
+            attempts++;
+            if (navigateToRoom() || attempts > 10) {
+              clearInterval(interval);
+            }
+          }, 500);
+        }
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
   }, []);
 
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
-        <NavigationContainer>
+        <NavigationContainer ref={navigationRef}>
           <RootNavigator />
           <StatusBar style="auto" />
         </NavigationContainer>
