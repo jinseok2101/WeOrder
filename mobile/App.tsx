@@ -24,7 +24,17 @@ import NotificationScreen from './src/screens/NotificationScreen';
 const Stack = createNativeStackNavigator();
 const queryClient = new QueryClient();
 
-export const navigationRef = createNavigationContainerRef();
+export type RootStackParamList = {
+  Auth: undefined;
+  Home: undefined;
+  CreateRoom: undefined;
+  RoomEdit: { id: string } | undefined;
+  RoomDetail: { id: string; tab?: 'order' | 'chat' | 'settlement' };
+  MyOrders: undefined;
+  Notifications: undefined;
+};
+
+export const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
 function RootNavigator() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
