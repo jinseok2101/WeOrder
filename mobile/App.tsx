@@ -78,8 +78,8 @@ export default function App() {
     const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
       const data = response.notification.request.content.data;
       if (data && data.roomId) {
-        const roomId = data.roomId;
-        const type = data.type; // 'chat' or 'settlement'
+        const roomId = data.roomId as string;
+        const type = data.type as string | undefined;
 
         const navigateToRoom = () => {
           if (navigationRef.isReady()) {
