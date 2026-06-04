@@ -4,11 +4,13 @@ import { useNavigation } from '@react-navigation/native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bell } from 'lucide-react-native';
 import { notificationsApi } from '../../api/notifications';
-import { getSocket } from '../../socket/socket';
+import { connectSocket } from '../../socket/socket';
+import { useAuthStore } from '../../store/authStore';
 
 export default function NotificationBell() {
   const navigation = useNavigation<any>();
   const queryClient = useQueryClient();
+  const token = useAuthStore((s) => s.token);
 
   const { data: notifications = [] } = useQuery({
     queryKey: ['notifications'],
@@ -18,8 +20,8 @@ export default function NotificationBell() {
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   useEffect(() => {
-    const socket = getSocket();
-    if (!socket) return;
+    if (!token) return;
+    const socket = connectSocket(token);
 
     const handleNewNotification = () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
@@ -30,7 +32,7 @@ export default function NotificationBell() {
     return () => {
       socket.off('notification:new', handleNewNotification);
     };
-  }, [queryClient]);
+  }, [token, queryClient]);
 
   return (
     <TouchableOpacity

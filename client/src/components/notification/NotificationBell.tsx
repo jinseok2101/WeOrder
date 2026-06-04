@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bell } from 'lucide-react';
 import { notificationsApi } from '../../api/notifications';
-import { getSocket } from '../../socket/socket';
+import { connectSocket } from '../../socket/socket';
+import { useAuthStore } from '../../store/authStore';
 import NotificationDrawer from './NotificationDrawer';
 
 export default function NotificationBell() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const queryClient = useQueryClient();
+  const token = useAuthStore((s) => s.token);
 
   const { data: notifications = [] } = useQuery({
     queryKey: ['notifications'],
@@ -18,8 +20,8 @@ export default function NotificationBell() {
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   useEffect(() => {
-    const socket = getSocket();
-    if (!socket) return;
+    if (!token) return;
+    const socket = connectSocket(token);
 
     const handleNewNotification = () => {
       // Invalidate query to trigger automatic real-time refetch
@@ -31,7 +33,7 @@ export default function NotificationBell() {
     return () => {
       socket.off('notification:new', handleNewNotification);
     };
-  }, [queryClient]);
+  }, [token, queryClient]);
 
   return (
     <>
