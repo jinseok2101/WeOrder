@@ -1,87 +1,43 @@
-## 기술 스택
+# 🛵 WeOrder (같이 시켜요)
 
-| 영역 | 사용 기술 | 설명 |
-| --- | --- | --- |
-| Web Frontend | React 18, TypeScript, Vite | 웹 클라이언트 UI 구현 및 빠른 개발 환경 구성 |
-| Mobile App | React Native, Expo, TypeScript | iOS/Android 모바일 앱 개발 |
-| Styling | Tailwind CSS, NativeWind | 웹/모바일 공통 스타일링 체계 구성 |
-| Routing / Navigation | React Router, React Navigation | 웹 페이지 라우팅 및 모바일 화면 전환 관리 |
-| State Management | Zustand | 로그인 정보 및 전역 상태 관리 |
-| Server State | TanStack React Query | API 데이터 캐싱, 동기화, 비동기 상태 관리 |
-| API Client | Axios | REST API 요청 및 JWT 토큰 인터셉터 처리 |
-| Realtime | Socket.IO | 채팅, 방 상태, 알림 등 실시간 이벤트 처리 |
-| Backend | Node.js, Express, TypeScript | REST API 서버 및 비즈니스 로직 구현 |
-| Authentication | JWT, bcryptjs | 사용자 인증, 비밀번호 암호화, 보호 라우트 처리 |
-| Database | PostgreSQL | 사용자, 주문방, 주문, 정산, 알림 데이터 저장 |
-| ORM | Prisma | 데이터 모델링 및 타입 안전한 DB 접근 |
-| Notification | Web Push, VAPID, Expo Push Notifications | 웹 PWA 및 모바일 푸시 알림 구현 |
-| Location / Map | Geolocation API, react-native-maps, react-native-nmap | 위치 기반 주문방 탐색 및 픽업 위치 표시 |
-| DevOps / Deploy | Docker Compose, Vercel, EAS | DB 로컬 환경 구성, 웹/모바일 배포 설정 |
+이웃들과 함께 배달비를 분담하고 실시간으로 정산 및 배달 상태를 공유하는 공동 배달 플랫폼 서비스입니다.
 
-##  시스템 아키텍처
+- **바로가기**: [WeOrder](https://weorder.vercel.app)
 
-```mermaid
-flowchart TB
-    subgraph Client["사용자 클라이언트"]
-        Web["Web App\nReact + Vite + PWA"]
-        Mobile["Mobile App\nReact Native + Expo"]
-    end
+---
 
-    subgraph FrontState["클라이언트 공통 계층"]
-        Zustand["Zustand\n인증/전역 상태"]
-        Query["TanStack React Query\n서버 데이터 캐싱"]
-        Axios["Axios API Client\nJWT Authorization"]
-        SocketClient["Socket.IO Client\n실시간 채팅/알림"]
-        PushClient["Push Client\nWeb Push / Expo Push"]
-    end
+## 📝 프로젝트 요약 (Project Summary)
 
-    subgraph Server["Backend Server"]
-        Express["Express API Server"]
-        Auth["Auth Middleware\nJWT 검증"]
-        Routes["REST API Routes\nAuth / Rooms / Orders / Settlement\nReviews / Addresses / Notifications"]
-        SocketServer["Socket.IO Server\nRoom 기반 실시간 이벤트"]
-        Services["Service Layer\nRoom / Settlement / Notification"]
-        Prisma["Prisma ORM"]
-    end
+WeOrder는 1인 가구가 늘어남에 따라 혼자 내기에는 크게 부담스러워진 배달비 문제를 해결하기 위해 기획되었습니다.
+같은 아파트나 건물 등 가까운 거리에 사는 이웃들이 실시간으로 방을 개설하여 같이 주문하고 배달비를 N분의 1로 나눌 수 있는 상생 플랫폼입니다.
 
-    subgraph DB["Database"]
-        Postgres["PostgreSQL"]
-    end
+---
 
-    subgraph External["외부 서비스"]
-        WebPush["Web Push Service\nVAPID"]
-        ExpoPush["Expo Push API"]
-        Geo["GPS / IP Location / Map APIs"]
-    end
+## 🌟 주요 기능 (Key Features)
 
-    Web --> Zustand
-    Web --> Query
-    Web --> Axios
-    Web --> SocketClient
-    Web --> PushClient
+1. **실시간 공동 주문 현황**:
+   - 최소주문금액 충족 여부 및 배달비 1인 분담률 실시간 표시 및 자동 계산.
+2. **실시간 소켓 채팅**:
+   - 공동 구매방 멤버 간 실시간 메시지 송수신 및 방 정보 업데이트 공유.
+3. **정산 및 수납 상태 실시간 추적**:
+   - 방장이 정산을 생성하면 각 멤버에게 배달비가 정산된 개인별 정산서가 발송되며, 송금 여부와 방장의 입금 확인 상태가 실시간 소켓으로 동기화됩니다. (토스 및 카카오페이 송금 링크 연동)
+4. **실시간 배달 도착 알림**:
+   - 방장의 제어로 배달 도착 10분 전, 5분 전, 도착 완료 상황을 소켓 및 모바일/웹 OS 푸시 알림으로 파티원들에게 즉시 전송합니다.
 
-    Mobile --> Zustand
-    Mobile --> Query
-    Mobile --> Axios
-    Mobile --> SocketClient
-    Mobile --> PushClient
+---
 
-    Axios --> Express
-    Express --> Auth
-    Auth --> Routes
-    Routes --> Services
-    Services --> Prisma
-    Prisma --> Postgres
+## 🛠 기술 스택 (Tech Stack)
 
-    SocketClient --> SocketServer
-    SocketServer --> Prisma
-    SocketServer --> Services
+| 구분               | 기술 스택                                                                    |
+| :----------------- | :--------------------------------------------------------------------------- |
+| **Frontend**       | React, TypeScript, Vite, Tailwind CSS, Zustand, TanStack Query (React Query) |
+| **Mobile**         | React Native, Expo                                                           |
+| **Backend**        | Node.js, Express, TypeScript, Socket.io, Prisma ORM                          |
+| **Database**       | PostgreSQL                                                                   |
+| **Infrastructure** | Vercel (Web Client Deployment)                                               |
 
-    Services --> WebPush
-    Services --> ExpoPush
-    PushClient --> WebPush
-    PushClient --> ExpoPush
+---
 
-    Web --> Geo
-    Mobile --> Geo
-```
+## 📐 시스템 아키텍처 (System Architecture)
+
+WeOrder의 클라이언트, 서버, 데이터베이스, 알림 서비스 간의 데이터 흐름 및 상호작용 아키텍처 구조입니다.
