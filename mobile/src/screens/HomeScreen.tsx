@@ -193,15 +193,23 @@ export default function HomeScreen() {
   };
 
   const confirmAddAddress = async () => {
-    if (!newLabel.trim()) {
-      Alert.alert("알림", "별칭을 입력해주세요.");
-      return;
+    const hasHome = savedAddresses.some((a) => a.label === "우리집");
+    const defaultLabel = modalMode === 'add' && !hasHome ? "우리집" : "";
+
+    let finalLabel = newLabel.trim();
+    if (!finalLabel) {
+      if (defaultLabel) {
+        finalLabel = defaultLabel;
+      } else {
+        Alert.alert("알림", "별칭을 입력해주세요.");
+        return;
+      }
     }
 
     try {
       if (modalMode === 'add') {
         await addressesApi.add({
-          label: newLabel.trim(),
+          label: finalLabel,
           roadAddress: roadAddress,
           jibunAddress: jibunAddress || undefined,
           latitude: mapCenter!.latitude,
@@ -209,7 +217,7 @@ export default function HomeScreen() {
         });
         Alert.alert("성공", "주소가 목록에 추가되었습니다.");
       } else {
-        await addressesApi.updateLabel(editingAddressId!, newLabel.trim());
+        await addressesApi.updateLabel(editingAddressId!, finalLabel);
         Alert.alert("성공", "주소 별칭이 수정되었습니다.");
       }
       setIsModalVisible(false);
@@ -503,7 +511,13 @@ export default function HomeScreen() {
             <TextInput
               value={newLabel}
               onChangeText={setNewLabel}
-              placeholder="예: 우리집, 회사, 동네"
+              placeholder={
+                modalMode === 'edit'
+                  ? "새로운 별칭을 입력해주세요."
+                  : savedAddresses.some((a) => a.label === "우리집")
+                  ? ""
+                  : "우리집"
+              }
               autoFocus
               className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-base mb-6"
             />

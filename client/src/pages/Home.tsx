@@ -115,11 +115,22 @@ export default function Home() {
   }, [user]);
 
   const handleSaveAddress = async () => {
+    const hasHome = savedAddresses.some((a) => a.label === "우리집");
+    const defaultLabel = hasHome ? "" : "우리집";
+
     const label = prompt(
       "주소 별칭을 입력해주세요 (예: 우리집, 회사)",
-      RoadName(roadAddress) || "내 동네",
+      defaultLabel,
     );
     if (label === null) return;
+
+    const trimmed = label.trim();
+    const finalLabel = trimmed || defaultLabel;
+
+    if (!finalLabel) {
+      alert("주소 별칭을 입력해주세요.");
+      return;
+    }
 
     if (latitude === null || longitude === null) {
       alert("위치 정보를 가져오는 중입니다. 잠시 후 다시 시도해주세요.");
@@ -128,7 +139,7 @@ export default function Home() {
 
     try {
       await addressesApi.add({
-        label: label || "내 동네",
+        label: finalLabel,
         roadAddress,
         jibunAddress: jibunAddress || undefined,
         latitude,
