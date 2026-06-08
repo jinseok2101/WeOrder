@@ -176,6 +176,25 @@ export default function Home() {
     }
   };
 
+  const handleEditAddressLabel = async (id: string, currentLabel: string, e: any) => {
+    e.stopPropagation();
+    const newLabel = prompt("새로운 주소 별칭을 입력해주세요 (예: 우리집, 회사)", currentLabel);
+    if (newLabel === null) return;
+
+    const trimmed = newLabel.trim();
+    if (!trimmed) {
+      alert("주소 별칭을 입력해주세요.");
+      return;
+    }
+
+    try {
+      await addressesApi.updateLabel(id, trimmed);
+      refreshAddresses();
+    } catch (error) {
+      alert("주소 별칭 수정에 실패했습니다.");
+    }
+  };
+
   const fetchAddress = (lat: number, lng: number) => {
     const naver = (window as any).naver;
     if (!naver || !naver.maps || !naver.maps.Service) {
@@ -595,6 +614,13 @@ export default function Home() {
                       <span className="font-bold text-[15px] truncate text-gray-900">
                         {addr.label}
                       </span>
+                      <button
+                        onClick={(e) => handleEditAddressLabel(addr.id, addr.label, e)}
+                        className="text-gray-300 hover:text-gray-600 p-0.5 cursor-pointer transition-colors"
+                        title="주소 별칭 수정"
+                      >
+                        <Edit2 size={13} />
+                      </button>
                       {activeAddressId === addr.id && (
                         <span className="bg-blue-50 text-blue-500 text-[10px] font-bold px-1.5 py-0.5 rounded border border-blue-100">
                           현재 설정된 주소

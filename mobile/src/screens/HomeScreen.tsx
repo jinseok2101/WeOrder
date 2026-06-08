@@ -45,6 +45,15 @@ export default function HomeScreen() {
   const [dongName, setDongName] = useState("");
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [newLabel, setNewLabel] = useState("");
+  const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
+  const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
+
+  const handleEditAddressLabel = (id: string, currentLabel: string) => {
+    setEditingAddressId(id);
+    setNewLabel(currentLabel);
+    setModalMode('edit');
+    setIsModalVisible(true);
+  };
   // mapCenter: 마커 위치 (드래그 시 카메라를 따라감)
   const [mapCenter, setMapCenter] = useState<{latitude: number; longitude: number} | null>(null);
   // programmaticCenter: NaverMapView의 center prop — 명시적으로 카메라를 이동할 때만 변경
@@ -177,8 +186,9 @@ export default function HomeScreen() {
       Alert.alert("알림", "주소를 조회 중이거나 위치가 올바르지 않습니다.");
       return;
     }
-    // 별칭을 빈칸으로 시작
     setNewLabel("");
+    setModalMode('add');
+    setEditingAddressId(null);
     setIsModalVisible(true);
   };
 
@@ -189,19 +199,24 @@ export default function HomeScreen() {
     }
 
     try {
-      await addressesApi.add({
-        label: newLabel.trim(),
-        roadAddress: roadAddress,
-        jibunAddress: jibunAddress || undefined,
-        latitude: mapCenter!.latitude,
-        longitude: mapCenter!.longitude,
-      });
+      if (modalMode === 'add') {
+        await addressesApi.add({
+          label: newLabel.trim(),
+          roadAddress: roadAddress,
+          jibunAddress: jibunAddress || undefined,
+          latitude: mapCenter!.latitude,
+          longitude: mapCenter!.longitude,
+        });
+        Alert.alert("성공", "주소가 목록에 추가되었습니다.");
+      } else {
+        await addressesApi.updateLabel(editingAddressId!, newLabel.trim());
+        Alert.alert("성공", "주소 별칭이 수정되었습니다.");
+      }
       setIsModalVisible(false);
-      Alert.alert("성공", "주소가 목록에 추가되었습니다.");
       refreshAddresses();
     } catch (error) {
-      console.error("주소 추가 실패:", error);
-      Alert.alert("오류", "주소 추가에 실패했습니다.");
+      console.error("주소 저장 실패:", error);
+      Alert.alert("오류", "주소 저장에 실패했습니다.");
     }
   };
 
@@ -373,12 +388,19 @@ export default function HomeScreen() {
                       </View>
                       
                       <View className="flex-1">
-                        <View className="flex-row items-center gap-2 mb-0.5">
+                        <View className="flex-row items-center gap-2 mb-0.5 flex-wrap">
                           <Text className={`font-bold text-[15px] ${
                             addr.isActive ? 'text-primary-900' : 'text-gray-900'
                           }`}>
                             {addr.label}
                           </Text>
+                          <TouchableOpacity
+                            onPress={() => handleEditAddressLabel(addr.id, addr.label)}
+                            activeOpacity={0.7}
+                            className="p-1"
+                          >
+                            <Edit2 size={13} color="#9ca3af" />
+                          </TouchableOpacity>
                           {addr.isActive && (
                             <View className="bg-primary-500 px-1.5 py-0.5 rounded">
                               <Text className="text-[10px] text-white font-bold">현재 설정된 주소</Text>
@@ -471,8 +493,12 @@ export default function HomeScreen() {
       >
         <View className="flex-1 bg-black/50 justify-center px-6">
           <View className="bg-white rounded-3xl p-6 shadow-xl">
-            <Text className="text-xl font-bold text-gray-900 mb-2">주소 별칭 저장</Text>
-            <Text className="text-sm text-gray-500 mb-5">이 위치를 어떤 이름으로 저장할까요?</Text>
+            <Text className="text-xl font-bold text-gray-900 mb-2">
+              {modalMode === 'add' ? '주소 별칭 저장' : '주소 별칭 수정'}
+            </Text>
+            <Text className="text-sm text-gray-500 mb-5">
+              {modalMode === 'add' ? '이 위치를 어떤 이름으로 저장할까요?' : '주소지의 새 별칭을 입력해주세요.'}
+            </Text>
             
             <TextInput
               value={newLabel}

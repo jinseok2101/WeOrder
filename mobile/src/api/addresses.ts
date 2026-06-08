@@ -28,4 +28,6 @@ export const addressesApi = {
     api.patch(`/addresses/${id}/activate`).then((r) => r.data),
   delete: (id: string) =>
     api.delete(`/addresses/${id}`).then((r) => r.data),
+  updateLabel: (id: string, label: string) =>
+    api.patch<UserAddress>(`/addresses/${id}`, { label }).then((r) => r.data),
 };

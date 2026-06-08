@@ -93,4 +93,25 @@ router.delete('/:id', authenticate, async (req: AuthRequest, res) => {
   }
 });
 
+// 주소 별칭 수정
+router.patch('/:id', authenticate, async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.params;
+    const { label } = req.body;
+
+    if (!label || !label.trim()) {
+      return res.status(400).json({ message: '주소 별칭을 입력해 주세요.' });
+    }
+
+    const address = await prisma.userAddress.update({
+      where: { id, userId: req.userId },
+      data: { label: label.trim() },
+    });
+
+    res.json(address);
+  } catch {
+    res.status(500).json({ message: '주소 별칭 수정에 실패했습니다.' });
+  }
+});
+
 export default router;
