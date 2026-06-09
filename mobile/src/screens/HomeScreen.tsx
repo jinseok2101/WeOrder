@@ -12,7 +12,18 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { useQuery } from "@tanstack/react-query";
 import { WebView } from "react-native-webview";
-import { Search, Crosshair, MapPin, Plus, Trash2, Check, Edit2, Home, Briefcase, X } from "lucide-react-native";
+import {
+  Search,
+  Crosshair,
+  MapPin,
+  Plus,
+  Trash2,
+  Check,
+  Edit2,
+  Home,
+  Briefcase,
+  X,
+} from "lucide-react-native";
 
 import { roomsApi } from "../api/rooms";
 import { addressesApi, UserAddress } from "../api/addresses";
@@ -28,18 +39,24 @@ import UserProfileModal from "../components/room/UserProfileModal";
 const extractDongName = (jibun: string, road: string) => {
   if (jibun) {
     const parts = jibun.split(/\s+/);
-    const dong = parts.find((p) => p.endsWith("동") || p.endsWith("읍") || p.endsWith("면"));
+    const dong = parts.find(
+      (p) => p.endsWith("동") || p.endsWith("읍") || p.endsWith("면"),
+    );
     if (dong) return dong;
   }
   if (road) {
     const match = road.match(/\(([^)]+)\)/);
     if (match) {
       const parts = match[1].split(",");
-      const dong = parts.map((p) => p.trim()).find((p) => p.endsWith("동") || p.endsWith("읍") || p.endsWith("면"));
+      const dong = parts
+        .map((p) => p.trim())
+        .find((p) => p.endsWith("동") || p.endsWith("읍") || p.endsWith("면"));
       if (dong) return dong;
     }
     const parts = road.split(/\s+/);
-    const dong = parts.find((p) => p.endsWith("동") || p.endsWith("읍") || p.endsWith("면"));
+    const dong = parts.find(
+      (p) => p.endsWith("동") || p.endsWith("읍") || p.endsWith("면"),
+    );
     if (dong) return dong;
   }
   return "";
@@ -59,7 +76,9 @@ export default function HomeScreen() {
 
   const [search, setSearch] = useState("");
   const [isUserProfileModalOpen, setIsUserProfileModalOpen] = useState(false);
-  const [selectedProfileUserId, setSelectedProfileUserId] = useState<string | null>(null);
+  const [selectedProfileUserId, setSelectedProfileUserId] = useState<
+    string | null
+  >(null);
   const [savedAddresses, setSavedAddresses] = useState<UserAddress[]>([]);
   const [roadAddress, setRoadAddress] = useState("위치 조회 중...");
   const [jibunAddress, setJibunAddress] = useState("");
@@ -119,29 +138,37 @@ export default function HomeScreen() {
   const handleFindMeClick = () => {
     setIsBottomSheetOpen(true);
     setShowMiniMap(true);
-    
-    const { latitude: currentLat, longitude: currentLng } = useGeoStore.getState();
+
+    const { latitude: currentLat, longitude: currentLng } =
+      useGeoStore.getState();
     if (currentLat && currentLng) {
       setMapCenter({ latitude: currentLat, longitude: currentLng });
       moveCameraTo(currentLat, currentLng);
       setLocation(currentLat, currentLng);
     }
-    
+
     fetchLocation(true);
   };
-  const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
+  const [modalMode, setModalMode] = useState<"add" | "edit">("add");
   const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
 
   const handleEditAddressLabel = (id: string, currentLabel: string) => {
     setEditingAddressId(id);
     setNewLabel(currentLabel);
-    setModalMode('edit');
+    setModalMode("edit");
     setIsModalVisible(true);
   };
   // mapCenter: 마커 위치 (드래그 시 카메라를 따라감)
-  const [mapCenter, setMapCenter] = useState<{latitude: number; longitude: number} | null>(null);
+  const [mapCenter, setMapCenter] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
   // programmaticCenter: NaverMapView의 center prop — 명시적으로 카메라를 이동할 때만 변경
-  const [programmaticCenter, setProgrammaticCenter] = useState<{latitude: number; longitude: number; zoom: number} | null>(null);
+  const [programmaticCenter, setProgrammaticCenter] = useState<{
+    latitude: number;
+    longitude: number;
+    zoom: number;
+  } | null>(null);
   // 같은 좌표로 setProgrammaticCenter를 호출해도 RN 브릿지가 무시하지 않도록 매번 zoom을 미세하게 변경
   const centerCounterRef = useRef(0);
   const moveCameraTo = (lat: number, lng: number) => {
@@ -177,7 +204,10 @@ export default function HomeScreen() {
       if (active) {
         setRoadAddress(active.roadAddress);
         setJibunAddress(active.jibunAddress || "");
-        const parsedDong = extractDongName(active.jibunAddress || "", active.roadAddress);
+        const parsedDong = extractDongName(
+          active.jibunAddress || "",
+          active.roadAddress,
+        );
         if (parsedDong) {
           setDongAddress(active.jibunAddress || active.roadAddress);
           setDongName(parsedDong);
@@ -205,10 +235,12 @@ export default function HomeScreen() {
         `https://maps.apigw.ntruss.com/map-reversegeocode/v2/gc?coords=${lng},${lat}&output=json&orders=legalcode,admcode,addr,roadaddr`,
         {
           headers: {
-            "X-NCP-APIGW-API-KEY-ID": process.env.EXPO_PUBLIC_NAVER_CLIENT_ID || "",
-            "X-NCP-APIGW-API-KEY": process.env.EXPO_PUBLIC_NAVER_CLIENT_SECRET || "",
+            "X-NCP-APIGW-API-KEY-ID":
+              process.env.EXPO_PUBLIC_NAVER_CLIENT_ID || "",
+            "X-NCP-APIGW-API-KEY":
+              process.env.EXPO_PUBLIC_NAVER_CLIENT_SECRET || "",
           },
-        }
+        },
       );
       const data = await response.json();
 
@@ -218,7 +250,7 @@ export default function HomeScreen() {
         const area1 = region.area1.name;
         const area2 = region.area2.name;
         const area3 = region.area3.name;
-        
+
         setDongAddress(`${area1} ${area2} ${area3}`);
         setDongName(area3 || "");
 
@@ -230,7 +262,7 @@ export default function HomeScreen() {
           const { region: r, land: l } = res;
           const base = `${r.area1.name} ${r.area2.name} ${r.area3.name}`;
           if (!l) return base;
-          
+
           const landName = res.name === "roadaddr" ? `${l.name} ` : "";
           return `${base} ${landName}${l.number1}${l.number2 ? "-" + l.number2 : ""}`;
         };
@@ -251,7 +283,6 @@ export default function HomeScreen() {
       setRoadAddress("주소 정보를 가져오지 못했습니다.");
     }
   };
-
 
   const mapRef = useRef<any>(null);
   const addressDebounceRef = useRef<any>(null);
@@ -285,14 +316,14 @@ export default function HomeScreen() {
       return;
     }
     setNewLabel("");
-    setModalMode('add');
+    setModalMode("add");
     setEditingAddressId(null);
     setIsModalVisible(true);
   };
 
   const confirmAddAddress = async () => {
     const hasHome = savedAddresses.some((a) => a.label === "우리집");
-    const defaultLabel = modalMode === 'add' && !hasHome ? "우리집" : "";
+    const defaultLabel = modalMode === "add" && !hasHome ? "우리집" : "";
 
     let finalLabel = newLabel.trim();
     if (!finalLabel) {
@@ -305,7 +336,7 @@ export default function HomeScreen() {
     }
 
     try {
-      if (modalMode === 'add') {
+      if (modalMode === "add") {
         await addressesApi.add({
           label: finalLabel,
           roadAddress: roadAddress,
@@ -333,11 +364,14 @@ export default function HomeScreen() {
       if (selected) {
         // 1. 즉각적인 상태 갱신 (0ms 지연)
         setSavedAddresses((prev) =>
-          prev.map((a) => ({ ...a, isActive: a.id === id }))
+          prev.map((a) => ({ ...a, isActive: a.id === id })),
         );
         setRoadAddress(selected.roadAddress);
         setJibunAddress(selected.jibunAddress || "");
-        const parsedDong = extractDongName(selected.jibunAddress || "", selected.roadAddress);
+        const parsedDong = extractDongName(
+          selected.jibunAddress || "",
+          selected.roadAddress,
+        );
         if (parsedDong) {
           setDongAddress(selected.jibunAddress || selected.roadAddress);
           setDongName(parsedDong);
@@ -347,7 +381,10 @@ export default function HomeScreen() {
         isProgrammaticSelectRef.current = true;
 
         setLocation(selected.latitude, selected.longitude);
-        setMapCenter({ latitude: selected.latitude, longitude: selected.longitude });
+        setMapCenter({
+          latitude: selected.latitude,
+          longitude: selected.longitude,
+        });
         moveCameraTo(selected.latitude, selected.longitude);
       }
       setIsBottomSheetOpen(false); // 주소 설정 완료 즉시 바텀 시트 닫기
@@ -387,7 +424,9 @@ export default function HomeScreen() {
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <View className="px-4 pt-4 pb-2">
           <View className="flex-row items-center flex-wrap mb-3 px-1">
-            <Text className="font-medium text-gray-800 text-[15px]">안녕하세요, </Text>
+            <Text className="font-medium text-gray-800 text-[15px]">
+              안녕하세요,{" "}
+            </Text>
             <TouchableOpacity
               onPress={() => {
                 if (user?.id) {
@@ -396,15 +435,21 @@ export default function HomeScreen() {
                 }
               }}
               activeOpacity={0.7}
-              style={{ justifyContent: 'center', alignItems: 'center' }}
+              style={{ justifyContent: "center", alignItems: "center" }}
             >
               <Text className="text-primary-600 font-bold underline text-[15px]">
                 {user?.nickname}
               </Text>
             </TouchableOpacity>
-            <Text className="font-medium text-gray-800 text-[15px] mr-2">님!</Text>
+            <Text className="font-medium text-gray-800 text-[15px] mr-2">
+              님!
+            </Text>
             {user?.trustScore !== undefined && (
-              <MannerStars rating={user.trustScore / 2} size={13} showText={true} />
+              <MannerStars
+                rating={user.trustScore / 2}
+                size={13}
+                showText={true}
+              />
             )}
           </View>
 
@@ -422,11 +467,15 @@ export default function HomeScreen() {
             >
               <View className="w-10 h-10 rounded-full bg-primary-50 items-center justify-center">
                 {(() => {
-                  const activeLabel = savedAddresses.find((a) => a.isActive)?.label || "";
+                  const activeLabel =
+                    savedAddresses.find((a) => a.isActive)?.label || "";
                   if (activeLabel.includes("집")) {
                     return <Home size={20} color="#f97316" />;
                   }
-                  if (activeLabel.includes("회사") || activeLabel.includes("일")) {
+                  if (
+                    activeLabel.includes("회사") ||
+                    activeLabel.includes("일")
+                  ) {
                     return <Briefcase size={20} color="#f97316" />;
                   }
                   return <MapPin size={20} color="#f97316" />;
@@ -435,23 +484,29 @@ export default function HomeScreen() {
               <View className="flex-1 pr-2">
                 <View className="flex-row items-center gap-1.5">
                   <Text className="font-extrabold text-[15px] text-gray-900">
-                    {savedAddresses.find((a) => a.isActive)?.label || "위치 설정"}
+                    {savedAddresses.find((a) => a.isActive)?.label ||
+                      "위치 설정"}
                   </Text>
                   <Text className="text-gray-400 text-xs font-bold">▼</Text>
                 </View>
-                <Text numberOfLines={1} className="text-[13px] text-gray-500 mt-0.5">
+                <Text
+                  numberOfLines={1}
+                  className="text-[13px] text-gray-500 mt-0.5"
+                >
                   {roadAddress || "배달받을 동네를 설정해주세요."}
                 </Text>
               </View>
             </TouchableOpacity>
-            
+
             <TouchableOpacity
               onPress={handleFindMeClick}
               activeOpacity={0.7}
               className="items-center justify-center p-2 rounded-xl"
             >
               <Crosshair size={18} color="#9ca3af" />
-              <Text className="text-[10px] font-bold mt-1 text-gray-400">현위치</Text>
+              <Text className="text-[10px] font-bold mt-1 text-gray-400">
+                현위치
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -509,21 +564,23 @@ export default function HomeScreen() {
       >
         <View className="flex-1 bg-black/60 justify-end">
           {/* 어두운 반투명 백드롭 오버레이 터치 시 닫기 */}
-          <TouchableOpacity 
-            activeOpacity={1} 
-            onPress={closeBottomSheet} 
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={closeBottomSheet}
             className="absolute inset-0"
           />
-          
+
           {/* 슬라이드인 바텀 드로워 */}
           <View className="bg-white rounded-t-[32px] shadow-2xl max-h-[85%] pb-8">
             {/* 드래그 핸들 바 */}
             <View className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto my-3" />
-            
-            <View className="px-5 flex-col" style={{ maxHeight: '95%' }}>
+
+            <View className="px-5 flex-col" style={{ maxHeight: "95%" }}>
               <View className="flex-row items-center justify-between mb-4">
-                <Text className="text-[18px] font-extrabold text-gray-900">배달 주소 설정</Text>
-                <TouchableOpacity 
+                <Text className="text-[18px] font-extrabold text-gray-900">
+                  배달 주소 설정
+                </Text>
+                <TouchableOpacity
                   onPress={closeBottomSheet}
                   className="p-1 rounded-full bg-gray-100"
                 >
@@ -533,27 +590,43 @@ export default function HomeScreen() {
 
               {/* Daum 우편번호 서비스 임베드 */}
               {!showMiniMap && (
-                <View style={{ height: 450, width: "100%", borderRadius: 16, overflow: "hidden", borderWidth: 1, borderColor: "#e5e7eb", marginBottom: 20 }}>
+                <View
+                  style={{
+                    height: 450,
+                    width: "100%",
+                    borderRadius: 16,
+                    overflow: "hidden",
+                    borderWidth: 1,
+                    borderColor: "#e5e7eb",
+                    marginBottom: 20,
+                  }}
+                >
                   <WebView
                     source={{ html: daumPostcodeHtml }}
                     onMessage={async (event) => {
                       try {
                         const data = JSON.parse(event.nativeEvent.data);
                         const fullAddress = data.roadAddress || data.address;
-                        
+
                         // 네이버 지오코딩 REST API로 좌표 검색
                         const response = await fetch(
                           `https://maps.apigw.ntruss.com/map-geocode/v2/geocode?query=${encodeURIComponent(fullAddress)}`,
                           {
                             headers: {
-                              "X-NCP-APIGW-API-KEY-ID": process.env.EXPO_PUBLIC_NAVER_CLIENT_ID || "",
-                              "X-NCP-APIGW-API-KEY": process.env.EXPO_PUBLIC_NAVER_CLIENT_SECRET || "",
+                              "X-NCP-APIGW-API-KEY-ID":
+                                process.env.EXPO_PUBLIC_NAVER_CLIENT_ID || "",
+                              "X-NCP-APIGW-API-KEY":
+                                process.env.EXPO_PUBLIC_NAVER_CLIENT_SECRET ||
+                                "",
                             },
-                          }
+                          },
                         );
                         const resData = await response.json();
 
-                        if (resData.status === "OK" && resData.addresses?.length > 0) {
+                        if (
+                          resData.status === "OK" &&
+                          resData.addresses?.length > 0
+                        ) {
                           const addr = resData.addresses[0];
                           const lat = parseFloat(addr.y);
                           const lng = parseFloat(addr.x);
@@ -563,7 +636,10 @@ export default function HomeScreen() {
                           setLocation(lat, lng);
                           setShowMiniMap(true);
                         } else {
-                          Alert.alert("오류", "선택한 주소의 좌표 정보를 가져올 수 없습니다.");
+                          Alert.alert(
+                            "오류",
+                            "선택한 주소의 좌표 정보를 가져올 수 없습니다.",
+                          );
                         }
                       } catch (err) {
                         console.error("Geocoding failed:", err);
@@ -577,7 +653,7 @@ export default function HomeScreen() {
                 </View>
               )}
 
-              <ScrollView 
+              <ScrollView
                 showsVerticalScrollIndicator={false}
                 nestedScrollEnabled={true}
                 className="mb-8"
@@ -585,7 +661,13 @@ export default function HomeScreen() {
                 {/* 검색 결과 미니 지도 영역 (접이식) */}
                 {showMiniMap && (
                   <View className="rounded-2xl overflow-hidden border border-gray-200 mb-5 shadow-sm bg-white">
-                    <View style={{ height: 200, width: "100%", backgroundColor: "#eee" }}>
+                    <View
+                      style={{
+                        height: 200,
+                        width: "100%",
+                        backgroundColor: "#eee",
+                      }}
+                    >
                       <MapComponent
                         mapRef={mapRef}
                         mapCenter={mapCenter}
@@ -597,10 +679,15 @@ export default function HomeScreen() {
                       />
                     </View>
                     <View className="p-4 bg-white border-t border-gray-100">
-                      <Text className="font-extrabold text-[15px] text-gray-900" numberOfLines={1}>
+                      <Text
+                        className="font-extrabold text-[15px] text-gray-900"
+                        numberOfLines={1}
+                      >
                         {roadAddress || "선택한 주소"}
                       </Text>
-                      <Text className="text-xs text-gray-400 mt-1 mb-3">지도의 마커 위치를 확인해 주세요.</Text>
+                      <Text className="text-xs text-gray-400 mt-1 mb-3">
+                        지도의 마커 위치를 확인해 주세요.
+                      </Text>
                       <TouchableOpacity
                         onPress={handleAddAddress}
                         className="w-full bg-primary-500 py-3 rounded-xl items-center"
@@ -615,43 +702,63 @@ export default function HomeScreen() {
 
                 {/* 저장된 주소 목록 */}
                 <View className="pb-10">
-                  <Text className="text-xs font-extrabold text-gray-400 tracking-wider mb-2.5">저장된 배달 주소</Text>
+                  <Text className="text-xs font-extrabold text-gray-400 tracking-wider mb-2.5">
+                    저장된 배달 주소
+                  </Text>
                   {savedAddresses.length > 0 ? (
                     <View className="gap-2">
                       {savedAddresses.map((addr) => (
-                        <View 
+                        <View
                           key={addr.id}
                           className={`flex-row items-center p-3.5 border rounded-2xl ${
-                            addr.isActive 
-                              ? 'bg-primary-50 border-primary-100' 
-                              : 'bg-white border-gray-100'
+                            addr.isActive
+                              ? "bg-primary-50 border-primary-100"
+                              : "bg-white border-gray-100"
                           }`}
                         >
-                          <TouchableOpacity 
+                          <TouchableOpacity
                             onPress={() => handleActivateAddress(addr.id)}
                             className="flex-1 flex-row items-center gap-3"
                           >
-                            <View className={`w-8 h-8 rounded-full items-center justify-center ${
-                              addr.isActive ? 'bg-primary-500' : 'bg-gray-100'
-                            }`}>
+                            <View
+                              className={`w-8 h-8 rounded-full items-center justify-center ${
+                                addr.isActive ? "bg-primary-500" : "bg-gray-100"
+                              }`}
+                            >
                               {addr.label.includes("집") ? (
-                                <Home size={16} color={addr.isActive ? 'white' : '#6b7280'} />
-                              ) : addr.label.includes("회사") || addr.label.includes("일") ? (
-                                <Briefcase size={16} color={addr.isActive ? 'white' : '#6b7280'} />
+                                <Home
+                                  size={16}
+                                  color={addr.isActive ? "white" : "#6b7280"}
+                                />
+                              ) : addr.label.includes("회사") ||
+                                addr.label.includes("일") ? (
+                                <Briefcase
+                                  size={16}
+                                  color={addr.isActive ? "white" : "#6b7280"}
+                                />
                               ) : (
-                                <MapPin size={16} color={addr.isActive ? 'white' : '#6b7280'} />
+                                <MapPin
+                                  size={16}
+                                  color={addr.isActive ? "white" : "#6b7280"}
+                                />
                               )}
                             </View>
-                            
+
                             <View className="flex-1">
                               <View className="flex-row items-center gap-1.5 flex-wrap">
-                                <Text className={`font-bold text-[14px] ${
-                                  addr.isActive ? 'text-primary-900' : 'text-gray-900'
-                                }`}>
+                                <Text
+                                  className={`font-bold text-[14px] ${
+                                    addr.isActive
+                                      ? "text-primary-900"
+                                      : "text-gray-900"
+                                  }`}
+                                >
                                   {addr.label}
                                 </Text>
                                 <TouchableOpacity
-                                  onPress={() => handleEditAddressLabel(addr.id, addr.label)}
+                                  onPress={() =>
+                                    handleEditAddressLabel(addr.id, addr.label)
+                                  }
                                   activeOpacity={0.7}
                                   className="p-0.5"
                                 >
@@ -659,14 +766,18 @@ export default function HomeScreen() {
                                 </TouchableOpacity>
                                 {addr.isActive && (
                                   <View className="bg-primary-500 px-1 py-0.2 rounded">
-                                    <Text className="text-[9px] text-white font-bold">선택됨</Text>
+                                    <Text className="text-[9px] text-white font-bold">
+                                      선택됨
+                                    </Text>
                                   </View>
                                 )}
                               </View>
-                              <Text 
+                              <Text
                                 numberOfLines={1}
                                 className={`text-[12px] mt-0.5 ${
-                                  addr.isActive ? 'text-primary-700' : 'text-gray-500'
+                                  addr.isActive
+                                    ? "text-primary-700"
+                                    : "text-gray-500"
                                 }`}
                               >
                                 {addr.roadAddress}
@@ -678,7 +789,7 @@ export default function HomeScreen() {
                             {addr.isActive && (
                               <Check size={18} color="#f97316" />
                             )}
-                            <TouchableOpacity 
+                            <TouchableOpacity
                               onPress={() => handleDeleteAddress(addr.id)}
                               className="p-1.5"
                             >
@@ -690,7 +801,9 @@ export default function HomeScreen() {
                     </View>
                   ) : (
                     <View className="p-8 items-center justify-center border border-gray-100 border-dashed rounded-2xl">
-                      <Text className="text-gray-400 text-sm">저장된 주소가 없습니다.</Text>
+                      <Text className="text-gray-400 text-sm">
+                        저장된 주소가 없습니다.
+                      </Text>
                     </View>
                   )}
                 </View>
@@ -710,34 +823,36 @@ export default function HomeScreen() {
         <View className="flex-1 bg-black/50 justify-center px-6">
           <View className="bg-white rounded-3xl p-6 shadow-xl">
             <Text className="text-xl font-bold text-gray-900 mb-2">
-              {modalMode === 'add' ? '주소 별칭 저장' : '주소 별칭 수정'}
+              {modalMode === "add" ? "주소 별칭 저장" : "주소 별칭 수정"}
             </Text>
             <Text className="text-sm text-gray-500 mb-5">
-              {modalMode === 'add' ? '이 위치를 어떤 이름으로 저장할까요?' : '주소지의 새 별칭을 입력해주세요.'}
+              {modalMode === "add"
+                ? "이 위치를 어떤 이름으로 저장할까요?"
+                : "주소지의 새 별칭을 입력해주세요."}
             </Text>
-            
+
             <TextInput
               value={newLabel}
               onChangeText={setNewLabel}
               placeholder={
-                modalMode === 'edit'
+                modalMode === "edit"
                   ? "새로운 별칭을 입력해주세요."
                   : savedAddresses.some((a) => a.label === "우리집")
-                  ? ""
-                  : "우리집"
+                    ? ""
+                    : "우리집"
               }
               autoFocus
               className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 text-base mb-6"
             />
-            
+
             <View className="flex-row gap-3">
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => setIsModalVisible(false)}
                 className="flex-1 bg-gray-100 py-3.5 rounded-xl items-center"
               >
                 <Text className="text-gray-600 font-bold text-base">취소</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={confirmAddAddress}
                 className="flex-1 bg-primary-500 py-3.5 rounded-xl items-center"
               >

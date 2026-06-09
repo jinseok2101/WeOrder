@@ -25,24 +25,29 @@ import MannerStars from "../components/room/MannerStars";
 import UserProfileModal from "../components/room/UserProfileModal";
 import { registerPushNotifications } from "../lib/push";
 
-
 // 반경 필터 기능 제거
 
 const extractDongName = (jibun: string, road: string) => {
   if (jibun) {
     const parts = jibun.split(/\s+/);
-    const dong = parts.find((p) => p.endsWith("동") || p.endsWith("읍") || p.endsWith("면"));
+    const dong = parts.find(
+      (p) => p.endsWith("동") || p.endsWith("읍") || p.endsWith("면"),
+    );
     if (dong) return dong;
   }
   if (road) {
     const match = road.match(/\(([^)]+)\)/);
     if (match) {
       const parts = match[1].split(",");
-      const dong = parts.map((p) => p.trim()).find((p) => p.endsWith("동") || p.endsWith("읍") || p.endsWith("면"));
+      const dong = parts
+        .map((p) => p.trim())
+        .find((p) => p.endsWith("동") || p.endsWith("읍") || p.endsWith("면"));
       if (dong) return dong;
     }
     const parts = road.split(/\s+/);
-    const dong = parts.find((p) => p.endsWith("동") || p.endsWith("읍") || p.endsWith("면"));
+    const dong = parts.find(
+      (p) => p.endsWith("동") || p.endsWith("읍") || p.endsWith("면"),
+    );
     if (dong) return dong;
   }
   return "";
@@ -51,47 +56,54 @@ const extractDongName = (jibun: string, road: string) => {
 export default function Home() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
-  const [bannerType, setBannerType] = useState<'default' | 'denied' | null>(() => {
-    if ('Notification' in window) {
-      if (Notification.permission === 'default') return 'default';
-      if (Notification.permission === 'denied') return 'denied';
-    }
-    return null;
-  });
+  const [bannerType, setBannerType] = useState<"default" | "denied" | null>(
+    () => {
+      if ("Notification" in window) {
+        if (Notification.permission === "default") return "default";
+        if (Notification.permission === "denied") return "denied";
+      }
+      return null;
+    },
+  );
 
   const handleEnableNotifications = async () => {
     try {
-      await registerPushNotifications();
-      if (Notification.permission === 'granted') {
-        setBannerType(null);
-      } else if (Notification.permission === 'denied') {
-        setBannerType('denied');
+      if ("Notification" in window) {
+        const permission = await Notification.requestPermission();
+        if (permission === "granted") {
+          setBannerType(null);
+        } else if (permission === "denied") {
+          setBannerType("denied");
+        }
       }
+      // 푸시 알림 등록은 백그라운드에서 비동기로 수행 (개발 서버 대기 방지)
+      registerPushNotifications();
     } catch (e) {
-      console.warn('Failed to subscribe from home banner:', e);
+      console.warn("Failed to subscribe from home banner:", e);
     }
   };
 
   const handleShowDeniedGuide = () => {
-    const isStandalone = window.matchMedia("(display-mode: standalone)").matches || (navigator as any).standalone;
+    const isStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (navigator as any).standalone;
     if (isStandalone) {
       alert(
         "🔓 아이폰 알림 차단 해제 방법:\n\n" +
-        "1. 휴대폰의 [설정] 앱으로 이동합니다.\n" +
-        "2. [알림] 메뉴를 선택합니다.\n" +
-        "3. [WeOrder] 앱을 찾아서 클릭합니다.\n" +
-        "4. [알림 허용] 스위치를 활성화(초록색)해주세요!"
+          "1. 휴대폰의 [설정] 앱으로 이동합니다.\n" +
+          "2. [알림] 메뉴를 선택합니다.\n" +
+          "3. [WeOrder] 앱을 찾아서 클릭합니다.\n" +
+          "4. [알림 허용] 스위치를 활성화(초록색)해주세요!",
       );
     } else {
       alert(
         "🔓 브라우저 알림 차단 해제 방법:\n\n" +
-        "1. Safari/주소창 왼쪽의 브라우저 제어 아이콘 또는 자물쇠(🔒)를 누릅니다.\n" +
-        "2. 알림 설정을 '허용'으로 변경해주세요.\n" +
-        "3. 변경 후 앱을 새로고침 해주세요."
+          "1. Safari/주소창 왼쪽의 브라우저 제어 아이콘 또는 자물쇠(🔒)를 누릅니다.\n" +
+          "2. 알림 설정을 '허용'으로 변경해주세요.\n" +
+          "3. 변경 후 앱을 새로고침 해주세요.",
       );
     }
   };
-
 
   const {
     latitude,
@@ -112,7 +124,7 @@ export default function Home() {
 
     const scriptId = "daum-postcode-script";
     let script = document.getElementById(scriptId) as HTMLScriptElement;
-    
+
     const initPostcode = () => {
       const postcodeContainer = document.getElementById("postcode-container");
       if (!postcodeContainer) return;
@@ -122,7 +134,7 @@ export default function Home() {
       new (window as any).daum.Postcode({
         oncomplete: function (data: any) {
           const fullAddress = data.roadAddress || data.address;
-          
+
           const naver = (window as any).naver;
           if (!naver || !naver.maps || !naver.maps.Service) {
             alert("지도 API가 로드되지 않았습니다.");
@@ -144,7 +156,7 @@ export default function Home() {
               }
 
               selectSearchResultAddress(addresses[0]);
-            }
+            },
           );
         },
         width: "100%",
@@ -155,7 +167,8 @@ export default function Home() {
     if (!script) {
       script = document.createElement("script");
       script.id = scriptId;
-      script.src = "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
+      script.src =
+        "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
       script.async = true;
       script.onload = () => {
         initPostcode();
@@ -198,8 +211,9 @@ export default function Home() {
     fetchAddress(lat, lng);
   };
 
-
-  const [selectedProfileUserId, setSelectedProfileUserId] = useState<string | null>(null);
+  const [selectedProfileUserId, setSelectedProfileUserId] = useState<
+    string | null
+  >(null);
   const [roadAddress, setRoadAddress] = useState("");
   const [jibunAddress, setJibunAddress] = useState("");
   const [dongName, setDongName] = useState("");
@@ -222,7 +236,10 @@ export default function Home() {
         setActiveAddressId(active.id);
         setRoadAddress(active.roadAddress);
         setJibunAddress(active.jibunAddress || "");
-        const parsedDong = extractDongName(active.jibunAddress || "", active.roadAddress);
+        const parsedDong = extractDongName(
+          active.jibunAddress || "",
+          active.roadAddress,
+        );
         if (parsedDong) setDongName(parsedDong);
         setLocation(active.latitude, active.longitude);
       }
@@ -286,11 +303,14 @@ export default function Home() {
       // 1. 즉각적인 상태 갱신 (0ms 지연)
       setActiveAddressId(addr.id);
       setSavedAddresses((prev) =>
-        prev.map((a) => ({ ...a, isActive: a.id === addr.id }))
+        prev.map((a) => ({ ...a, isActive: a.id === addr.id })),
       );
       setRoadAddress(addr.roadAddress);
       setJibunAddress(addr.jibunAddress || "");
-      const parsedDong = extractDongName(addr.jibunAddress || "", addr.roadAddress);
+      const parsedDong = extractDongName(
+        addr.jibunAddress || "",
+        addr.roadAddress,
+      );
       if (parsedDong) setDongName(parsedDong);
       setLocation(addr.latitude, addr.longitude);
 
@@ -325,9 +345,16 @@ export default function Home() {
     }
   };
 
-  const handleEditAddressLabel = async (id: string, currentLabel: string, e: any) => {
+  const handleEditAddressLabel = async (
+    id: string,
+    currentLabel: string,
+    e: any,
+  ) => {
     e.stopPropagation();
-    const newLabel = prompt("새로운 주소 별칭을 입력해주세요 (예: 우리집, 회사)", currentLabel);
+    const newLabel = prompt(
+      "새로운 주소 별칭을 입력해주세요 (예: 우리집, 회사)",
+      currentLabel,
+    );
     if (newLabel === null) return;
 
     const trimmed = newLabel.trim();
@@ -379,7 +406,7 @@ export default function Home() {
 
   const handleFindMe = () => {
     setRoadAddress("현재 위치 찾는 중...");
-    
+
     const fallbackToIP = async () => {
       try {
         const res = await fallbackFetch("https://freeipapi.com/api/json");
@@ -399,23 +426,29 @@ export default function Home() {
         const center = new naver.maps.LatLng(lat, lng);
         mapRef.current.panTo(center);
         if (markerRef.current) markerRef.current.setPosition(center);
-        if (infoWindowRef.current) infoWindowRef.current.open(mapRef.current, markerRef.current);
+        if (infoWindowRef.current)
+          infoWindowRef.current.open(mapRef.current, markerRef.current);
         fetchAddress(lat, lng);
       }
     };
 
-    if ('geolocation' in navigator) {
+    if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          updateMapLocation(position.coords.latitude, position.coords.longitude);
+          updateMapLocation(
+            position.coords.latitude,
+            position.coords.longitude,
+          );
         },
         (error) => {
           if (error.code === error.PERMISSION_DENIED) {
-            alert("⚠️ 위치 권한이 차단되어 있습니다.\n모바일(Safari 등) 설정에서 위치 접근을 '허용'해야 정확한 내 위치를 찾을 수 있습니다.");
+            alert(
+              "⚠️ 위치 권한이 차단되어 있습니다.\n모바일(Safari 등) 설정에서 위치 접근을 '허용'해야 정확한 내 위치를 찾을 수 있습니다.",
+            );
           }
           fallbackToIP();
         },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
       );
     } else {
       fallbackToIP();
@@ -556,7 +589,13 @@ export default function Home() {
   );
 
   useEffect(() => {
-    if (!mapRef.current || typeof window === "undefined" || !isBottomSheetOpen || !showMiniMap) return;
+    if (
+      !mapRef.current ||
+      typeof window === "undefined" ||
+      !isBottomSheetOpen ||
+      !showMiniMap
+    )
+      return;
     const naver = (window as any).naver;
     if (!naver || !naver.maps) return;
 
@@ -620,12 +659,15 @@ export default function Home() {
     <div className="min-h-screen bg-gray-50 pb-24">
       <Header title="WeOrder" showLogout showHome />
 
-      {bannerType === 'default' && (
+      {bannerType === "default" && (
         <div className="mx-4 mt-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between shadow-sm animate-in slide-in-from-top-4 duration-300">
           <div className="flex-1 min-w-0 pr-2">
-            <h4 className="text-xs font-extrabold text-amber-800 tracking-wider">🔔 실시간 알림 받기</h4>
+            <h4 className="text-xs font-extrabold text-amber-800 tracking-wider">
+              🔔 실시간 알림 받기
+            </h4>
             <p className="text-[11px] text-amber-700 mt-1 font-semibold leading-relaxed">
-              공동 배달 진행 상태, 실시간 배달 도착 상황 및 정산 입금 요청 소식을 실시간 알림으로 받아보세요!
+              공동 배달 진행 상태, 실시간 배달 도착 상황 및 정산 입금 요청
+              소식을 실시간 알림으로 받아보세요!
             </p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
@@ -645,12 +687,15 @@ export default function Home() {
         </div>
       )}
 
-      {bannerType === 'denied' && (
+      {bannerType === "denied" && (
         <div className="mx-4 mt-4 bg-gradient-to-r from-rose-50 to-red-50 border border-rose-200 rounded-2xl p-4 flex items-center justify-between shadow-sm animate-in slide-in-from-top-4 duration-300">
           <div className="flex-1 min-w-0 pr-2">
-            <h4 className="text-xs font-extrabold text-rose-800 tracking-wider">⚠️ 기기 알림이 꺼져 있습니다</h4>
+            <h4 className="text-xs font-extrabold text-rose-800 tracking-wider">
+              ⚠️ 기기 알림이 꺼져 있습니다
+            </h4>
             <p className="text-[11px] text-rose-700 mt-1 font-semibold leading-relaxed">
-              알림 권한이 차단되어 있습니다. 휴대폰 설정에서 알림 허용을 직접 켜주셔야 실시간 배달 및 정산 알림을 받으실 수 있습니다.
+              알림 권한이 차단되어 있습니다. 휴대폰 설정에서 알림 허용을 직접
+              켜주셔야 실시간 배달 및 정산 알림을 받으실 수 있습니다.
             </p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
@@ -670,9 +715,7 @@ export default function Home() {
         </div>
       )}
 
-
       <div className="px-4 pt-4 pb-2">
-
         <div className="flex items-center justify-between mb-3 px-1 flex-wrap">
           <p className="font-medium text-gray-800 text-[15px] flex items-center gap-1.5 flex-wrap">
             <span>안녕하세요,</span>
@@ -689,7 +732,11 @@ export default function Home() {
             </button>
             <span>님!</span>
             {user?.trustScore !== undefined && (
-              <MannerStars rating={user.trustScore / 2} size={13} showText={true} />
+              <MannerStars
+                rating={user.trustScore / 2}
+                size={13}
+                showText={true}
+              />
             )}
           </p>
         </div>
@@ -707,9 +754,11 @@ export default function Home() {
           >
             <div className="w-10 h-10 rounded-full bg-primary-50 text-primary-600 flex items-center justify-center">
               {(() => {
-                const activeLabel = savedAddresses.find((a) => a.isActive)?.label || "";
+                const activeLabel =
+                  savedAddresses.find((a) => a.isActive)?.label || "";
                 if (activeLabel.includes("집")) return <HomeIcon size={20} />;
-                if (activeLabel.includes("회사") || activeLabel.includes("일")) return <Briefcase size={20} />;
+                if (activeLabel.includes("회사") || activeLabel.includes("일"))
+                  return <Briefcase size={20} />;
                 return <MapPin size={20} />;
               })()}
             </div>
@@ -725,7 +774,7 @@ export default function Home() {
               </p>
             </div>
           </button>
-          
+
           <button
             onClick={handleFindMeClick}
             className="flex flex-col items-center justify-center p-2 rounded-xl text-gray-400 hover:text-primary-500 hover:bg-primary-50/50 transition-colors"
@@ -793,20 +842,22 @@ export default function Home() {
       {isBottomSheetOpen && (
         <>
           {/* 어두운 반투명 백드롭 오버레이 */}
-          <div 
+          <div
             onClick={() => setIsBottomSheetOpen(false)}
             className="fixed inset-0 bg-black/60 z-40 transition-opacity duration-300 animate-in fade-in"
           />
-          
+
           {/* 슬라이드인 바텀 드로워 */}
           <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[32px] shadow-2xl z-50 max-h-[85vh] overflow-y-auto flex flex-col animate-in slide-in-from-bottom duration-300">
             {/* 드래그 핸들 바 */}
             <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto my-3 flex-shrink-0" />
-            
+
             <div className="px-5 pb-8 flex-1 flex flex-col">
               <div className="flex items-center justify-between mb-4 flex-shrink-0">
-                <h3 className="text-[18px] font-extrabold text-gray-900">배달 주소 설정</h3>
-                <button 
+                <h3 className="text-[18px] font-extrabold text-gray-900">
+                  배달 주소 설정
+                </h3>
+                <button
                   onClick={() => setIsBottomSheetOpen(false)}
                   className="p-1 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100"
                 >
@@ -816,9 +867,9 @@ export default function Home() {
 
               {/* Daum 우편번호 서비스 임베드 */}
               {!showMiniMap && (
-                <div 
-                  id="postcode-container" 
-                  className="w-full border border-gray-200 rounded-2xl overflow-hidden mb-5 flex-shrink-0" 
+                <div
+                  id="postcode-container"
+                  className="w-full border border-gray-200 rounded-2xl overflow-hidden mb-5 flex-shrink-0"
                   style={{ height: "450px" }}
                 />
               )}
@@ -826,14 +877,22 @@ export default function Home() {
               {/* 검색 결과 미니 지도 영역 (접이식) */}
               {showMiniMap && (
                 <div className="rounded-2xl overflow-hidden border border-gray-200 mb-5 shadow-sm flex flex-col z-0 relative flex-shrink-0 animate-in zoom-in-95 duration-200">
-                  <div style={{ height: "200px", width: "100%", zIndex: 0 }} className="relative bg-[#eee]">
-                    <div id="map" style={{ width: "100%", height: "100%" }}></div>
+                  <div
+                    style={{ height: "200px", width: "100%", zIndex: 0 }}
+                    className="relative bg-[#eee]"
+                  >
+                    <div
+                      id="map"
+                      style={{ width: "100%", height: "100%" }}
+                    ></div>
                   </div>
                   <div className="bg-white p-4">
                     <h4 className="font-extrabold text-[15px] text-gray-900 truncate">
                       {roadAddress || "선택한 주소"}
                     </h4>
-                    <p className="text-xs text-gray-400 mt-1 mb-3">지도의 마커 위치를 확인해 주세요.</p>
+                    <p className="text-xs text-gray-400 mt-1 mb-3">
+                      지도의 마커 위치를 확인해 주세요.
+                    </p>
                     <button
                       onClick={handleSaveAddress}
                       className="w-full bg-primary-500 hover:bg-primary-600 text-white py-2.5 rounded-xl font-bold text-[14px] transition-colors"
@@ -846,7 +905,9 @@ export default function Home() {
 
               {/* 저장된 주소 목록 */}
               <div className="flex-1 overflow-y-auto min-h-[150px]">
-                <h4 className="text-xs font-extrabold text-gray-400 tracking-wider mb-2.5">저장된 배달 주소</h4>
+                <h4 className="text-xs font-extrabold text-gray-400 tracking-wider mb-2.5">
+                  저장된 배달 주소
+                </h4>
                 {savedAddresses.length > 0 ? (
                   <div className="space-y-2">
                     {savedAddresses.map((addr) => (
@@ -855,31 +916,38 @@ export default function Home() {
                         onClick={() => selectAddress(addr)}
                         className={cn(
                           "px-4 py-3.5 border rounded-2xl flex items-start gap-3 transition-colors active:bg-gray-50 cursor-pointer",
-                          activeAddressId === addr.id ? "bg-primary-50/20 border-primary-200" : "bg-white border-gray-100",
+                          activeAddressId === addr.id
+                            ? "bg-primary-50/20 border-primary-200"
+                            : "bg-white border-gray-100",
                         )}
                       >
                         <div
                           className={cn(
                             "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5",
-                            activeAddressId === addr.id ? "bg-primary-500 text-white" : "bg-gray-100 text-gray-500",
+                            activeAddressId === addr.id
+                              ? "bg-primary-500 text-white"
+                              : "bg-gray-100 text-gray-500",
                           )}
                         >
                           {addr.label.includes("집") ? (
                             <HomeIcon size={16} />
-                          ) : addr.label.includes("회사") || addr.label.includes("일") ? (
+                          ) : addr.label.includes("회사") ||
+                            addr.label.includes("일") ? (
                             <Briefcase size={16} />
                           ) : (
                             <MapPin size={16} />
                           )}
                         </div>
-                        
+
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="font-extrabold text-[14px] text-gray-900 truncate">
                               {addr.label}
                             </span>
                             <button
-                              onClick={(e) => handleEditAddressLabel(addr.id, addr.label, e)}
+                              onClick={(e) =>
+                                handleEditAddressLabel(addr.id, addr.label, e)
+                              }
                               className="text-gray-300 hover:text-gray-500 p-0.5"
                               title="별칭 수정"
                             >
@@ -897,7 +965,9 @@ export default function Home() {
                         </div>
 
                         <div className="flex items-center gap-2 self-center ml-2 flex-shrink-0">
-                          {activeAddressId === addr.id && <Check size={18} className="text-primary-500" />}
+                          {activeAddressId === addr.id && (
+                            <Check size={18} className="text-primary-500" />
+                          )}
                           <button
                             onClick={(e) => deleteAddress(addr.id, e)}
                             className="p-1.5 text-gray-300 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
@@ -911,7 +981,9 @@ export default function Home() {
                   </div>
                 ) : (
                   <div className="text-center py-8 border border-dashed border-gray-100 rounded-2xl">
-                    <p className="text-sm text-gray-400">저장된 배달 주소가 없습니다.</p>
+                    <p className="text-sm text-gray-400">
+                      저장된 배달 주소가 없습니다.
+                    </p>
                   </div>
                 )}
               </div>
