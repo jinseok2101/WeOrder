@@ -28,6 +28,26 @@ import { registerPushNotifications } from "../lib/push";
 
 // 반경 필터 기능 제거
 
+const extractDongName = (jibun: string, road: string) => {
+  if (jibun) {
+    const parts = jibun.split(/\s+/);
+    const dong = parts.find((p) => p.endsWith("동") || p.endsWith("읍") || p.endsWith("면"));
+    if (dong) return dong;
+  }
+  if (road) {
+    const match = road.match(/\(([^)]+)\)/);
+    if (match) {
+      const parts = match[1].split(",");
+      const dong = parts.map((p) => p.trim()).find((p) => p.endsWith("동") || p.endsWith("읍") || p.endsWith("면"));
+      if (dong) return dong;
+    }
+    const parts = road.split(/\s+/);
+    const dong = parts.find((p) => p.endsWith("동") || p.endsWith("읍") || p.endsWith("면"));
+    if (dong) return dong;
+  }
+  return "";
+};
+
 export default function Home() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
@@ -200,6 +220,10 @@ export default function Home() {
       const active = list.find((a) => a.isActive);
       if (active) {
         setActiveAddressId(active.id);
+        setRoadAddress(active.roadAddress);
+        setJibunAddress(active.jibunAddress || "");
+        const parsedDong = extractDongName(active.jibunAddress || "", active.roadAddress);
+        if (parsedDong) setDongName(parsedDong);
         setLocation(active.latitude, active.longitude);
       }
     } catch (error) {
@@ -259,17 +283,32 @@ export default function Home() {
 
   const selectAddress = async (addr: UserAddress) => {
     try {
-      await addressesApi.activate(addr.id);
+      // 1. 즉각적인 상태 갱신 (0ms 지연)
       setActiveAddressId(addr.id);
+      setSavedAddresses((prev) =>
+        prev.map((a) => ({ ...a, isActive: a.id === addr.id }))
+      );
+      setRoadAddress(addr.roadAddress);
+      setJibunAddress(addr.jibunAddress || "");
+      const parsedDong = extractDongName(addr.jibunAddress || "", addr.roadAddress);
+      if (parsedDong) setDongName(parsedDong);
       setLocation(addr.latitude, addr.longitude);
 
       if (mapRef.current) {
         const naver = (window as any).naver;
         const center = new naver.maps.LatLng(addr.latitude, addr.longitude);
         mapRef.current.panTo(center);
-        markerRef.current.setPosition(center);
+        if (markerRef.current) {
+          markerRef.current.setPosition(center);
+        }
       }
-      fetchAddress(addr.latitude, addr.longitude);
+
+      // 주소 선택 완료 즉시 바텀 시트 닫기
+      setIsBottomSheetOpen(false);
+
+      // 2. 백그라운드 API 호출
+      await addressesApi.activate(addr.id);
+      refreshAddresses();
     } catch (error) {
       alert("주소 선택에 실패했습니다.");
     }

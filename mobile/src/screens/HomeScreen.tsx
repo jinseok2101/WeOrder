@@ -25,9 +25,30 @@ import MapComponent from "../components/map/MapComponent";
 import MannerStars from "../components/room/MannerStars";
 import UserProfileModal from "../components/room/UserProfileModal";
 
+const extractDongName = (jibun: string, road: string) => {
+  if (jibun) {
+    const parts = jibun.split(/\s+/);
+    const dong = parts.find((p) => p.endsWith("동") || p.endsWith("읍") || p.endsWith("면"));
+    if (dong) return dong;
+  }
+  if (road) {
+    const match = road.match(/\(([^)]+)\)/);
+    if (match) {
+      const parts = match[1].split(",");
+      const dong = parts.map((p) => p.trim()).find((p) => p.endsWith("동") || p.endsWith("읍") || p.endsWith("면"));
+      if (dong) return dong;
+    }
+    const parts = road.split(/\s+/);
+    const dong = parts.find((p) => p.endsWith("동") || p.endsWith("읍") || p.endsWith("면"));
+    if (dong) return dong;
+  }
+  return "";
+};
+
 export default function HomeScreen() {
   const navigation = useNavigation<any>();
   const user = useAuthStore((s) => s.user);
+  const isProgrammaticSelectRef = useRef(false);
   const {
     latitude,
     longitude,
@@ -153,9 +174,19 @@ export default function HomeScreen() {
       const list = await addressesApi.list();
       setSavedAddresses(list);
       const active = list.find((a) => a.isActive);
-      // GPS 위치가 아직 잡히지 않은 경우에만 저장된 활성 주소로 위치 설정
-      if (active && !latitude) {
-        setLocation(active.latitude, active.longitude);
+      if (active) {
+        setRoadAddress(active.roadAddress);
+        setJibunAddress(active.jibunAddress || "");
+        const parsedDong = extractDongName(active.jibunAddress || "", active.roadAddress);
+        if (parsedDong) {
+          setDongAddress(active.jibunAddress || active.roadAddress);
+          setDongName(parsedDong);
+        }
+        // GPS 위치가 아직 잡히지 않은 경우에만 저장된 활성 주소로 위치 설정
+        if (!latitude) {
+          isProgrammaticSelectRef.current = true;
+          setLocation(active.latitude, active.longitude);
+        }
       }
     } catch (error) {
       console.error("주소 목록 로드 실패:", error);
@@ -236,6 +267,10 @@ export default function HomeScreen() {
   // 마커(지도 중심)이 바뀌면 주소를 업데이트 (디바운스 500ms)
   useEffect(() => {
     if (mapCenter?.latitude && mapCenter?.longitude) {
+      if (isProgrammaticSelectRef.current) {
+        isProgrammaticSelectRef.current = false;
+        return;
+      }
       clearTimeout(addressDebounceRef.current);
       addressDebounceRef.current = setTimeout(() => {
         fetchAddress(mapCenter.latitude, mapCenter.longitude);
@@ -294,15 +329,32 @@ export default function HomeScreen() {
 
   const handleActivateAddress = async (id: string) => {
     try {
-      await addressesApi.activate(id);
-      refreshAddresses();
       const selected = savedAddresses.find((a) => a.id === id);
       if (selected) {
+        // 1. 즉각적인 상태 갱신 (0ms 지연)
+        setSavedAddresses((prev) =>
+          prev.map((a) => ({ ...a, isActive: a.id === id }))
+        );
+        setRoadAddress(selected.roadAddress);
+        setJibunAddress(selected.jibunAddress || "");
+        const parsedDong = extractDongName(selected.jibunAddress || "", selected.roadAddress);
+        if (parsedDong) {
+          setDongAddress(selected.jibunAddress || selected.roadAddress);
+          setDongName(parsedDong);
+        }
+
+        // 카메라 이동 시 역지오코딩 방지 설정
+        isProgrammaticSelectRef.current = true;
+
         setLocation(selected.latitude, selected.longitude);
         setMapCenter({ latitude: selected.latitude, longitude: selected.longitude });
         moveCameraTo(selected.latitude, selected.longitude);
       }
-      setIsBottomSheetOpen(false); // 주소 설정 완료 후 바텀 시트 닫기
+      setIsBottomSheetOpen(false); // 주소 설정 완료 즉시 바텀 시트 닫기
+
+      // 2. 백그라운드 API 호출 및 서버 동기화
+      await addressesApi.activate(id);
+      refreshAddresses();
     } catch (error) {
       console.error("주소 활성화 실패:", error);
       Alert.alert("오류", "주소 변경에 실패했습니다.");
