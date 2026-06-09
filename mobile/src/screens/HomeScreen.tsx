@@ -421,7 +421,16 @@ export default function HomeScreen() {
               className="flex-1 flex-row items-center gap-2"
             >
               <View className="w-10 h-10 rounded-full bg-primary-50 items-center justify-center">
-                <MapPin size={20} color="#f97316" />
+                {(() => {
+                  const activeLabel = savedAddresses.find((a) => a.isActive)?.label || "";
+                  if (activeLabel.includes("집")) {
+                    return <Home size={20} color="#f97316" />;
+                  }
+                  if (activeLabel.includes("회사") || activeLabel.includes("일")) {
+                    return <Briefcase size={20} color="#f97316" />;
+                  }
+                  return <MapPin size={20} color="#f97316" />;
+                })()}
               </View>
               <View className="flex-1 pr-2">
                 <View className="flex-row items-center gap-1.5">

@@ -706,7 +706,12 @@ export default function Home() {
             className="flex-1 flex items-center gap-2 text-left cursor-pointer hover:opacity-85"
           >
             <div className="w-10 h-10 rounded-full bg-primary-50 text-primary-600 flex items-center justify-center">
-              <MapPin size={20} />
+              {(() => {
+                const activeLabel = savedAddresses.find((a) => a.isActive)?.label || "";
+                if (activeLabel.includes("집")) return <HomeIcon size={20} />;
+                if (activeLabel.includes("회사") || activeLabel.includes("일")) return <Briefcase size={20} />;
+                return <MapPin size={20} />;
+              })()}
             </div>
             <div className="flex-1 min-w-0 pr-2">
               <div className="flex items-center gap-1.5">
