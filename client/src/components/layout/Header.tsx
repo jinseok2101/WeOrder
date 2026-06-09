@@ -32,7 +32,13 @@ export default function Header({ title, showBack = false, showHome = false, show
       <div className="flex items-center gap-1">
         {showHome && (
           <button
-            onClick={() => navigate('/')}
+            onClick={() => {
+              if (window.location.pathname === '/') {
+                window.location.reload();
+              } else {
+                navigate('/');
+              }
+            }}
             className="p-2 rounded-full hover:bg-gray-100 transition-colors"
           >
             <HomeIcon size={18} className="text-gray-500" />
