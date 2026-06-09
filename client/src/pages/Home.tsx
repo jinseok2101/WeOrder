@@ -11,6 +11,7 @@ import {
   Trash2,
   Check,
   Edit2,
+  X,
 } from "lucide-react";
 import { roomsApi } from "../api/rooms";
 import { useGeolocation } from "../hooks/useGeolocation";
@@ -79,7 +80,100 @@ export default function Home() {
     setLocation,
   } = useGeolocation();
   const [search, setSearch] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
+  const [showMiniMap, setShowMiniMap] = useState(false);
   const [isUserProfileModalOpen, setIsUserProfileModalOpen] = useState(false);
+
+  // 실시간 디바운스 주소 자동완성
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      const naver = (window as any).naver;
+      if (!naver || !naver.maps || !naver.maps.Service) return;
+
+      naver.maps.Service.geocode(
+        { query: searchQuery.trim() },
+        function (status: any, response: any) {
+          if (status === naver.maps.Service.Status.OK) {
+            const addresses = response.v2?.addresses || [];
+            setSearchResults(addresses);
+          }
+        }
+      );
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const handleSearchAddress = () => {
+    if (!searchQuery.trim()) {
+      alert("검색할 주소를 입력해주세요.");
+      return;
+    }
+
+    const naver = (window as any).naver;
+    if (!naver || !naver.maps || !naver.maps.Service) {
+      alert("지도 API가 로드되지 않았습니다.");
+      return;
+    }
+
+    naver.maps.Service.geocode(
+      { query: searchQuery.trim() },
+      function (status: any, response: any) {
+        if (status !== naver.maps.Service.Status.OK) {
+          alert("주소 검색 중 오류가 발생했습니다.");
+          return;
+        }
+
+        const addresses = response.v2?.addresses || [];
+        if (addresses.length === 0) {
+          alert("검색 결과가 없습니다. 도로명이나 지번을 다시 확인해주세요.");
+          setSearchResults([]);
+          return;
+        }
+
+        selectSearchResultAddress(addresses[0]);
+      }
+    );
+  };
+
+  const selectSearchResultAddress = (address: any) => {
+    const lat = parseFloat(address.y);
+    const lng = parseFloat(address.x);
+    const naver = (window as any).naver;
+
+    setLocation(lat, lng);
+    setShowMiniMap(true);
+    setSearchResults([]);
+
+    setTimeout(() => {
+      const mapElement = document.getElementById("map");
+      if (mapRef.current && mapElement) {
+        const center = new naver.maps.LatLng(lat, lng);
+        mapRef.current.setCenter(center);
+        if (markerRef.current) {
+          markerRef.current.setPosition(center);
+        }
+        if (infoWindowRef.current) {
+          infoWindowRef.current.open(mapRef.current, markerRef.current);
+        }
+      }
+    }, 150);
+
+    fetchAddress(lat, lng);
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleSearchAddress();
+    }
+  };
   const [selectedProfileUserId, setSelectedProfileUserId] = useState<string | null>(null);
   const [roadAddress, setRoadAddress] = useState("");
   const [jibunAddress, setJibunAddress] = useState("");
@@ -287,7 +381,23 @@ export default function Home() {
   // 기존 코드와의 충돌을 피하기 위한 간단한 fetch alias
   const fallbackFetch = fetch;
 
+  const handleFindMeClick = () => {
+    setIsBottomSheetOpen(true);
+    setShowMiniMap(true);
+    setTimeout(() => {
+      handleFindMe();
+    }, 200);
+  };
+
+  // 지도 초기화 및 클린업
   useEffect(() => {
+    if (!isBottomSheetOpen || !showMiniMap) {
+      mapRef.current = null;
+      markerRef.current = null;
+      infoWindowRef.current = null;
+      return;
+    }
+
     if (
       !latitude ||
       !longitude ||
@@ -298,8 +408,13 @@ export default function Home() {
 
     const initMap = () => {
       const naver = (window as any).naver;
-      // 네이버 지도가 아직 준비되지 않았다면 0.1초 뒤에 다시 시도 (에러 방어)
       if (!naver || !naver.maps) {
+        setTimeout(initMap, 100);
+        return;
+      }
+
+      const mapElement = document.getElementById("map");
+      if (!mapElement) {
         setTimeout(initMap, 100);
         return;
       }
@@ -314,7 +429,6 @@ export default function Home() {
       markerRef.current = new naver.maps.Marker({
         position: center,
         map: mapRef.current,
-        // 배민 스타일처럼 마커 자체는 움직이지 못하게 (오직 지도만 드래그)
         draggable: false,
         icon: {
           content: `
@@ -353,14 +467,12 @@ export default function Home() {
         infoWindowRef.current.close();
       });
 
-      // 드래그 중일 때만 마커가 지도 중앙을 따라가게
       naver.maps.Event.addListener(mapRef.current, "drag", () => {
         if (isDraggingRef.current) {
           markerRef.current.setPosition(mapRef.current.getCenter());
         }
       });
 
-      // idle은 드래그가 끝났을 때만 위치 확정 (줌 시에는 무시)
       naver.maps.Event.addListener(mapRef.current, "idle", () => {
         if (!isDraggingRef.current) return;
         isDraggingRef.current = false;
@@ -373,7 +485,7 @@ export default function Home() {
     };
 
     initMap();
-  }, [latitude, longitude, setLocation]);
+  }, [latitude, longitude, setLocation, isBottomSheetOpen, showMiniMap]);
 
   const {
     data: rooms = [],
@@ -400,7 +512,7 @@ export default function Home() {
   );
 
   useEffect(() => {
-    if (!mapRef.current || typeof window === "undefined") return;
+    if (!mapRef.current || typeof window === "undefined" || !isBottomSheetOpen || !showMiniMap) return;
     const naver = (window as any).naver;
     if (!naver || !naver.maps) return;
 
@@ -452,12 +564,13 @@ export default function Home() {
 
       // 마커 클릭 시 방으로 이동
       naver.maps.Event.addListener(marker, "click", () => {
+        setIsBottomSheetOpen(false); // 바텀 시트 닫기
         navigate(`/rooms/${room.id}`);
       });
 
       roomMarkersRef.current.push(marker);
     });
-  }, [filtered, navigate]);
+  }, [filtered, navigate, isBottomSheetOpen, showMiniMap]);
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
@@ -516,7 +629,7 @@ export default function Home() {
 
       <div className="px-4 pt-4 pb-2">
 
-        <div className="flex items-center gap-2 mb-3 px-1 flex-wrap">
+        <div className="flex items-center justify-between mb-3 px-1 flex-wrap">
           <p className="font-medium text-gray-800 text-[15px] flex items-center gap-1.5 flex-wrap">
             <span>안녕하세요,</span>
             <button
@@ -537,129 +650,42 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="rounded-2xl overflow-hidden shadow-sm flex flex-col z-0 relative mb-4">
-          <div
-            style={{ height: "320px", width: "100%", zIndex: 0 }}
-            className="relative bg-[#eee]"
+        {/* 주소 트리거 버튼 바 (시나리오 A) */}
+        <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm mb-4 flex items-center justify-between">
+          <button
+            onClick={() => {
+              setIsBottomSheetOpen(true);
+              setShowMiniMap(false);
+              setSearchQuery("");
+              setSearchResults([]);
+            }}
+            className="flex-1 flex items-center gap-2 text-left cursor-pointer hover:opacity-85"
           >
-            <div id="map" style={{ width: "100%", height: "100%" }}></div>
-
-            <button
-              onClick={handleFindMe}
-              className="absolute bottom-5 right-4 z-10 w-11 h-11 bg-white rounded-full shadow-lg flex items-center justify-center border border-gray-200 hover:bg-gray-50 transition-colors"
-              style={{ zIndex: 100 }}
-            >
-              <Crosshair size={22} className="text-gray-700" />
-            </button>
-          </div>
-
-          <div className="bg-white p-5 border-x border-b border-gray-200">
-            <div className="mb-4 min-h-[50px]">
-              <h3 className="font-bold text-[18px] text-gray-900 leading-tight">
-                {roadAddress ||
-                  jibunAddress ||
-                  (latitude ? "주소를 찾는 중..." : "위치를 찾는 중...")}
-              </h3>
-              {roadAddress && jibunAddress && roadAddress !== jibunAddress && (
-                <p className="text-[14px] text-gray-400 mt-1">{jibunAddress}</p>
-              )}
+            <div className="w-10 h-10 rounded-full bg-primary-50 text-primary-600 flex items-center justify-center">
+              <MapPin size={20} />
             </div>
-
-            <div className="bg-[#FFF0F0] rounded-xl p-3 mb-4 text-center">
-              <p className="text-[14px] text-[#FF5A5F] font-medium tracking-tight">
-                지도의 표시와 실제 주소가 맞는지 확인해주세요.
+            <div className="flex-1 min-w-0 pr-2">
+              <div className="flex items-center gap-1.5">
+                <span className="font-extrabold text-[15px] text-gray-900">
+                  {savedAddresses.find((a) => a.isActive)?.label || "위치 설정"}
+                </span>
+                <span className="text-gray-400 text-xs font-bold">▼</span>
+              </div>
+              <p className="text-[13px] text-gray-500 truncate mt-0.5">
+                {roadAddress || "배달받을 동네를 설정해주세요."}
               </p>
             </div>
-
-            <div className="flex items-center justify-between mb-2 mt-2">
-              <span className="text-xs text-gray-500 font-medium">
-                모든 배달방 표시 중
-              </span>
-            </div>
-
-            <button
-              onClick={handleSaveAddress}
-              className="w-full bg-[#222222] hover:bg-black text-white py-3.5 rounded-xl font-bold text-[16px] transition-colors flex items-center justify-center gap-2"
-            >
-              <Plus size={18} />이 위치를 주소 목록에 추가
-            </button>
-          </div>
+          </button>
+          
+          <button
+            onClick={handleFindMeClick}
+            className="flex flex-col items-center justify-center p-2 rounded-xl text-gray-400 hover:text-primary-500 hover:bg-primary-50/50 transition-colors"
+            title="현재 위치 찾기"
+          >
+            <Crosshair size={18} />
+            <span className="text-[10px] font-bold mt-1">현위치</span>
+          </button>
         </div>
-
-        {/* 배민 스타일 주소 목록 섹션 */}
-        {savedAddresses.length > 0 && (
-          <div className="bg-white rounded-2xl border border-gray-100 mb-6 overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-50 flex items-center justify-between">
-              <h3 className="text-sm font-bold text-gray-800">저장된 주소지</h3>
-              <Edit2 size={14} className="text-gray-400" />
-            </div>
-            <div className="divide-y divide-gray-50">
-              {savedAddresses.map((addr) => (
-                <div
-                  key={addr.id}
-                  onClick={() => selectAddress(addr)}
-                  className={cn(
-                    "px-4 py-4 flex items-start gap-3 transition-colors active:bg-gray-50",
-                    activeAddressId === addr.id ? "bg-primary-50/30" : "",
-                  )}
-                >
-                  <div
-                    className={cn(
-                      "w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5",
-                      activeAddressId === addr.id
-                        ? "bg-primary-500 text-white"
-                        : "bg-gray-100 text-gray-500",
-                    )}
-                  >
-                    {addr.label.includes("집") ? (
-                      <HomeIcon size={18} />
-                    ) : addr.label.includes("회사") ||
-                      addr.label.includes("일") ? (
-                      <Briefcase size={18} />
-                    ) : (
-                      <MapPin size={18} />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="font-bold text-[15px] truncate text-gray-900">
-                        {addr.label}
-                      </span>
-                      <button
-                        onClick={(e) => handleEditAddressLabel(addr.id, addr.label, e)}
-                        className="text-gray-300 hover:text-gray-600 p-0.5 cursor-pointer transition-colors"
-                        title="주소 별칭 수정"
-                      >
-                        <Edit2 size={13} />
-                      </button>
-                      {activeAddressId === addr.id && (
-                        <span className="bg-blue-50 text-blue-500 text-[10px] font-bold px-1.5 py-0.5 rounded border border-blue-100">
-                          현재 설정된 주소
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-[13px] text-gray-500 truncate mb-0.5">
-                      {addr.roadAddress}
-                    </p>
-                  </div>
-                  <div className="flex flex-col items-end gap-3 ml-2">
-                    {activeAddressId === addr.id ? (
-                      <Check size={20} className="text-primary-500" />
-                    ) : (
-                      <div className="w-5 h-5" />
-                    )}
-                    <button
-                      onClick={(e) => deleteAddress(addr.id, e)}
-                      className="p-1 hover:bg-red-50 text-gray-300 hover:text-red-400 rounded transition-colors"
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         <div className="relative mb-4">
           <Search
@@ -713,6 +739,173 @@ export default function Home() {
       </div>
 
       <BottomNav />
+
+      {/* 바텀 시트 (주소 설정 전용 모달 - 시나리오 A) */}
+      {isBottomSheetOpen && (
+        <>
+          {/* 어두운 반투명 백드롭 오버레이 */}
+          <div 
+            onClick={() => setIsBottomSheetOpen(false)}
+            className="fixed inset-0 bg-black/60 z-40 transition-opacity duration-300 animate-in fade-in"
+          />
+          
+          {/* 슬라이드인 바텀 드로워 */}
+          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-[32px] shadow-2xl z-50 max-h-[85vh] overflow-y-auto flex flex-col animate-in slide-in-from-bottom duration-300">
+            {/* 드래그 핸들 바 */}
+            <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto my-3 flex-shrink-0" />
+            
+            <div className="px-5 pb-8 flex-1 flex flex-col">
+              <div className="flex items-center justify-between mb-4 flex-shrink-0">
+                <h3 className="text-[18px] font-extrabold text-gray-900">배달 주소 설정</h3>
+                <button 
+                  onClick={() => setIsBottomSheetOpen(false)}
+                  className="p-1 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* 실시간 주소 자동완성 검색창 */}
+              <div className="relative mb-5 z-20 flex-shrink-0">
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <MapPin size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyDown={handleSearchKeyDown}
+                      placeholder="도로명, 건물명, 지번으로 검색"
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
+                  </div>
+                  <button
+                    onClick={handleSearchAddress}
+                    className="bg-primary-500 hover:bg-primary-600 text-white font-bold text-sm px-4 py-2.5 rounded-xl shadow-sm transition-all active:scale-95 cursor-pointer whitespace-nowrap"
+                  >
+                    검색
+                  </button>
+                </div>
+
+                {/* 실시간 주소 자동완성 추천 드롭다운 */}
+                {searchResults.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-56 overflow-y-auto z-50 divide-y divide-gray-50">
+                    {searchResults.map((addr, idx) => (
+                      <div
+                        key={idx}
+                        onClick={() => selectSearchResultAddress(addr)}
+                        className="px-4 py-3 hover:bg-gray-50 cursor-pointer text-left transition-colors"
+                      >
+                        <p className="font-bold text-[13px] text-gray-800">
+                          {addr.roadAddress || addr.jibunAddress}
+                        </p>
+                        {addr.roadAddress && addr.jibunAddress && (
+                          <p className="text-[11px] text-gray-400 mt-0.5">
+                            지번: {addr.jibunAddress}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* 검색 결과 미니 지도 영역 (접이식) */}
+              {showMiniMap && (
+                <div className="rounded-2xl overflow-hidden border border-gray-200 mb-5 shadow-sm flex flex-col z-0 relative flex-shrink-0 animate-in zoom-in-95 duration-200">
+                  <div style={{ height: "200px", width: "100%", zIndex: 0 }} className="relative bg-[#eee]">
+                    <div id="map" style={{ width: "100%", height: "100%" }}></div>
+                  </div>
+                  <div className="bg-white p-4">
+                    <h4 className="font-extrabold text-[15px] text-gray-900 truncate">
+                      {roadAddress || "선택한 주소"}
+                    </h4>
+                    <p className="text-xs text-gray-400 mt-1 mb-3">지도의 마커 위치를 확인해 주세요.</p>
+                    <button
+                      onClick={handleSaveAddress}
+                      className="w-full bg-primary-500 hover:bg-primary-600 text-white py-2.5 rounded-xl font-bold text-[14px] transition-colors"
+                    >
+                      이 위치를 주소지로 설정 및 추가
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* 저장된 주소 목록 */}
+              <div className="flex-1 overflow-y-auto min-h-[150px]">
+                <h4 className="text-xs font-extrabold text-gray-400 tracking-wider mb-2.5">저장된 배달 주소</h4>
+                {savedAddresses.length > 0 ? (
+                  <div className="space-y-2">
+                    {savedAddresses.map((addr) => (
+                      <div
+                        key={addr.id}
+                        onClick={() => selectAddress(addr)}
+                        className={cn(
+                          "px-4 py-3.5 border rounded-2xl flex items-start gap-3 transition-colors active:bg-gray-50 cursor-pointer",
+                          activeAddressId === addr.id ? "bg-primary-50/20 border-primary-200" : "bg-white border-gray-100",
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            "w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5",
+                            activeAddressId === addr.id ? "bg-primary-500 text-white" : "bg-gray-100 text-gray-500",
+                          )}
+                        >
+                          {addr.label.includes("집") ? (
+                            <HomeIcon size={16} />
+                          ) : addr.label.includes("회사") || addr.label.includes("일") ? (
+                            <Briefcase size={16} />
+                          ) : (
+                            <MapPin size={16} />
+                          )}
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-extrabold text-[14px] text-gray-900 truncate">
+                              {addr.label}
+                            </span>
+                            <button
+                              onClick={(e) => handleEditAddressLabel(addr.id, addr.label, e)}
+                              className="text-gray-300 hover:text-gray-500 p-0.5"
+                              title="별칭 수정"
+                            >
+                              <Edit2 size={12} />
+                            </button>
+                            {activeAddressId === addr.id && (
+                              <span className="bg-primary-50 text-primary-600 text-[9px] font-bold px-1 py-0.2 rounded">
+                                선택됨
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[12px] text-gray-500 truncate mt-0.5">
+                            {addr.roadAddress}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2 self-center ml-2 flex-shrink-0">
+                          {activeAddressId === addr.id && <Check size={18} className="text-primary-500" />}
+                          <button
+                            onClick={(e) => deleteAddress(addr.id, e)}
+                            className="p-1.5 text-gray-300 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
+                            title="삭제"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 border border-dashed border-gray-100 rounded-2xl">
+                    <p className="text-sm text-gray-400">저장된 배달 주소가 없습니다.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* 내 신뢰도 프로필 팝업 모달 */}
       {selectedProfileUserId && (

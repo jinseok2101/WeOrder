@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Crosshair, MapPin, Plus, Trash2, Check, Edit2, Home, Briefcase } from "lucide-react-native";
+import { Search, Crosshair, MapPin, Plus, Trash2, Check, Edit2, Home, Briefcase, X } from "lucide-react-native";
 
 import { roomsApi } from "../api/rooms";
 import { addressesApi, UserAddress } from "../api/addresses";
@@ -45,6 +45,108 @@ export default function HomeScreen() {
   const [dongName, setDongName] = useState("");
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [newLabel, setNewLabel] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isBottomSheetOpen, setIsBottomSheetOpen] = useState(false);
+  const [showMiniMap, setShowMiniMap] = useState(false);
+
+  const closeBottomSheet = () => {
+    setIsBottomSheetOpen(false);
+    setShowMiniMap(false);
+    setSearchQuery("");
+    setSearchResults([]);
+  };
+
+  // 실시간 디바운스 주소 자동완성
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        const response = await fetch(
+          `https://maps.apigw.ntruss.com/map-geocode/v2/geocode?query=${encodeURIComponent(searchQuery.trim())}`,
+          {
+            headers: {
+              "X-NCP-APIGW-API-KEY-ID": process.env.EXPO_PUBLIC_NAVER_CLIENT_ID || "",
+              "X-NCP-APIGW-API-KEY": process.env.EXPO_PUBLIC_NAVER_CLIENT_SECRET || "",
+            },
+          }
+        );
+        const data = await response.json();
+
+        if (data.status === "OK" && data.addresses) {
+          setSearchResults(data.addresses);
+        }
+      } catch (error) {
+        console.warn("Geocoding debounce fetch error:", error);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const handleSearchAddress = async () => {
+    if (!searchQuery.trim()) {
+      Alert.alert("알림", "검색할 주소를 입력해주세요.");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `https://maps.apigw.ntruss.com/map-geocode/v2/geocode?query=${encodeURIComponent(searchQuery.trim())}`,
+        {
+          headers: {
+            "X-NCP-APIGW-API-KEY-ID": process.env.EXPO_PUBLIC_NAVER_CLIENT_ID || "",
+            "X-NCP-APIGW-API-KEY": process.env.EXPO_PUBLIC_NAVER_CLIENT_SECRET || "",
+          },
+        }
+      );
+      const data = await response.json();
+
+      if (data.status === "OK" && data.addresses?.length > 0) {
+        const addresses = data.addresses;
+        if (addresses.length === 1) {
+          selectSearchResultAddress(addresses[0]);
+        } else {
+          setSearchResults(addresses);
+        }
+      } else {
+        Alert.alert("알림", "검색 결과가 없습니다. 도로명이나 지번을 다시 확인해주세요.");
+        setSearchResults([]);
+      }
+    } catch (error) {
+      console.error("주소 검색 API 호출 에러:", error);
+      Alert.alert("오류", "주소 검색에 실패했습니다.");
+    }
+  };
+
+  const selectSearchResultAddress = (address: any) => {
+    const lat = parseFloat(address.y);
+    const lng = parseFloat(address.x);
+
+    setMapCenter({ latitude: lat, longitude: lng });
+    moveCameraTo(lat, lng);
+    setLocation(lat, lng);
+    setSearchResults([]);
+    setShowMiniMap(true);
+  };
+
+  const handleFindMeClick = () => {
+    setIsBottomSheetOpen(true);
+    setShowMiniMap(true);
+    
+    const { latitude: currentLat, longitude: currentLng } = useGeoStore.getState();
+    if (currentLat && currentLng) {
+      setMapCenter({ latitude: currentLat, longitude: currentLng });
+      moveCameraTo(currentLat, currentLng);
+      setLocation(currentLat, currentLng);
+    }
+    
+    fetchLocation(true);
+  };
   const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
   const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
 
@@ -216,6 +318,7 @@ export default function HomeScreen() {
           longitude: mapCenter!.longitude,
         });
         Alert.alert("성공", "주소가 목록에 추가되었습니다.");
+        setIsBottomSheetOpen(false); // 주소 설정 완료 후 바텀 시트 닫기
       } else {
         await addressesApi.updateLabel(editingAddressId!, finalLabel);
         Alert.alert("성공", "주소 별칭이 수정되었습니다.");
@@ -232,6 +335,13 @@ export default function HomeScreen() {
     try {
       await addressesApi.activate(id);
       refreshAddresses();
+      const selected = savedAddresses.find((a) => a.id === id);
+      if (selected) {
+        setLocation(selected.latitude, selected.longitude);
+        setMapCenter({ latitude: selected.latitude, longitude: selected.longitude });
+        moveCameraTo(selected.latitude, selected.longitude);
+      }
+      setIsBottomSheetOpen(false); // 주소 설정 완료 후 바텀 시트 닫기
     } catch (error) {
       console.error("주소 활성화 실패:", error);
       Alert.alert("오류", "주소 변경에 실패했습니다.");
@@ -285,166 +395,42 @@ export default function HomeScreen() {
             )}
           </View>
 
-          <View className="rounded-2xl overflow-hidden bg-white mb-4">
-            <View
-              style={{ height: 320, width: "100%", backgroundColor: "#eee" }}
+          {/* 주소 트리거 버튼 바 (시나리오 A) */}
+          <View className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm mb-4 flex-row items-center justify-between">
+            <TouchableOpacity
+              onPress={() => {
+                setIsBottomSheetOpen(true);
+                setShowMiniMap(false);
+                setSearchQuery("");
+                setSearchResults([]);
+              }}
+              activeOpacity={0.7}
+              className="flex-1 flex-row items-center gap-2"
             >
-              {geoError && (
-                <View className="absolute top-4 left-4 right-4 z-20 bg-red-500/90 p-3 rounded-xl">
-                  <Text className="text-white text-xs font-medium text-center">
-                    {geoError}
+              <View className="w-10 h-10 rounded-full bg-primary-50 items-center justify-center">
+                <MapPin size={20} color="#f97316" />
+              </View>
+              <View className="flex-1 pr-2">
+                <View className="flex-row items-center gap-1.5">
+                  <Text className="font-extrabold text-[15px] text-gray-900">
+                    {savedAddresses.find((a) => a.isActive)?.label || "위치 설정"}
                   </Text>
+                  <Text className="text-gray-400 text-xs font-bold">▼</Text>
                 </View>
-              )}
-              {mapCenter ? (
-                <MapComponent
-                  mapRef={mapRef}
-                  mapCenter={mapCenter}
-                  programmaticCenter={programmaticCenter}
-                  setMapCenter={setMapCenter}
-                  setLocation={setLocation}
-                  filtered={filtered}
-                  navigation={navigation}
-                />
-              ) : (
-                <View className="flex-1 items-center justify-center">
-                  <ActivityIndicator size="large" color="#f97316" />
-                </View>
-              )}
-
-              <TouchableOpacity
-                onPress={() => {
-                  // 1. 즉시 현재 스토어에 있는 위치로 이동 (반응 속도 향상)
-                  const { latitude: currentLat, longitude: currentLng } = useGeoStore.getState();
-                  if (currentLat && currentLng) {
-                    setMapCenter({ latitude: currentLat, longitude: currentLng });
-                    moveCameraTo(currentLat, currentLng);
-                  }
-                  
-                  // 2. 백그라운드에서 최신 위치 업데이트 요청
-                  // (위치가 업데이트되면 useEffect[latitude, longitude]가 감지하여 한 번 더 정밀 이동함)
-                  fetchLocation(true);
-                }}
-                className="absolute bottom-5 right-4 w-11 h-11 bg-white rounded-full items-center justify-center border border-gray-200"
-              >
-                <Crosshair size={22} color="#374151" />
-              </TouchableOpacity>
-            </View>
-
-            <View className="p-5 border-t border-gray-200">
-              <View className="mb-4">
-                <Text className="font-bold text-[18px] text-gray-900 leading-tight">
-                  {dongAddress || "위치 조회 중..."}
-                </Text>
-                <Text className="text-[14px] text-gray-500 mt-1">
-                  {roadAddress}
+                <Text numberOfLines={1} className="text-[13px] text-gray-500 mt-0.5">
+                  {roadAddress || "배달받을 동네를 설정해주세요."}
                 </Text>
               </View>
-
-              <View className="bg-[#FFF0F0] rounded-xl p-3 mb-4 items-center">
-                <Text className="text-[14px] text-[#FF5A5F] font-medium">
-                  지도의 표시와 실제 주소가 맞는지 확인해주세요.
-                </Text>
-              </View>
-
-              <TouchableOpacity
-                onPress={handleAddAddress}
-                className="w-full bg-[#222222] py-3.5 rounded-xl flex-row items-center justify-center gap-2"
-              >
-                <Plus size={18} color="white" />
-                <Text className="text-white font-bold text-[16px]">
-                  이 위치를 주소 목록에 추가
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* 저장된 주소지 섹션 */}
-          <View className="mb-6">
-            <View className="flex-row items-center justify-between mb-3 px-1">
-              <Text className="font-bold text-gray-900 text-lg">저장된 주소지</Text>
-              <TouchableOpacity>
-                <Edit2 size={16} color="#9ca3af" />
-              </TouchableOpacity>
-            </View>
+            </TouchableOpacity>
             
-            <View className="gap-3">
-              {savedAddresses.length > 0 ? (
-                savedAddresses.map((addr) => (
-                  <View 
-                    key={addr.id}
-                    className={`flex-row items-center p-4 rounded-2xl border ${
-                      addr.isActive 
-                        ? 'bg-primary-50 border-primary-100' 
-                        : 'bg-white border-gray-100'
-                    }`}
-                  >
-                    <TouchableOpacity 
-                      onPress={() => handleActivateAddress(addr.id)}
-                      className="flex-1 flex-row items-center gap-3"
-                    >
-                      <View className={`w-10 h-10 rounded-full items-center justify-center ${
-                        addr.isActive ? 'bg-primary-500' : 'bg-gray-100'
-                      }`}>
-                        {addr.label.includes("집") ? (
-                          <Home size={18} color={addr.isActive ? 'white' : '#6b7280'} />
-                        ) : addr.label.includes("회사") || addr.label.includes("일") ? (
-                          <Briefcase size={18} color={addr.isActive ? 'white' : '#6b7280'} />
-                        ) : (
-                          <MapPin size={18} color={addr.isActive ? 'white' : '#6b7280'} />
-                        )}
-                      </View>
-                      
-                      <View className="flex-1">
-                        <View className="flex-row items-center gap-2 mb-0.5 flex-wrap">
-                          <Text className={`font-bold text-[15px] ${
-                            addr.isActive ? 'text-primary-900' : 'text-gray-900'
-                          }`}>
-                            {addr.label}
-                          </Text>
-                          <TouchableOpacity
-                            onPress={() => handleEditAddressLabel(addr.id, addr.label)}
-                            activeOpacity={0.7}
-                            className="p-1"
-                          >
-                            <Edit2 size={13} color="#9ca3af" />
-                          </TouchableOpacity>
-                          {addr.isActive && (
-                            <View className="bg-primary-500 px-1.5 py-0.5 rounded">
-                              <Text className="text-[10px] text-white font-bold">현재 설정된 주소</Text>
-                            </View>
-                          )}
-                        </View>
-                        <Text 
-                          numberOfLines={1}
-                          className={`text-[13px] ${
-                            addr.isActive ? 'text-primary-700' : 'text-gray-500'
-                          }`}
-                        >
-                          {addr.roadAddress}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-
-                    <View className="flex-row items-center gap-2">
-                      {addr.isActive && (
-                        <Check size={18} color="#f97316" />
-                      )}
-                      <TouchableOpacity 
-                        onPress={() => handleDeleteAddress(addr.id)}
-                        className="p-2"
-                      >
-                        <Trash2 size={18} color="#9ca3af" />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                ))
-              ) : (
-                <View className="bg-white rounded-2xl p-8 items-center justify-center border border-gray-100 border-dashed">
-                  <Text className="text-gray-400 text-sm">저장된 주소가 없습니다.</Text>
-                </View>
-              )}
-            </View>
+            <TouchableOpacity
+              onPress={handleFindMeClick}
+              activeOpacity={0.7}
+              className="items-center justify-center p-2 rounded-xl"
+            >
+              <Crosshair size={18} color="#9ca3af" />
+              <Text className="text-[10px] font-bold mt-1 text-gray-400">현위치</Text>
+            </TouchableOpacity>
           </View>
 
           <View className="relative mb-4 justify-center">
@@ -491,6 +477,218 @@ export default function HomeScreen() {
       </ScrollView>
 
       <BottomNav />
+
+      {/* 바텀 시트 (주소 설정 전용 모달 - 시나리오 A) */}
+      <Modal
+        visible={isBottomSheetOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={closeBottomSheet}
+      >
+        <View className="flex-1 bg-black/60 justify-end">
+          {/* 어두운 반투명 백드롭 오버레이 터치 시 닫기 */}
+          <TouchableOpacity 
+            activeOpacity={1} 
+            onPress={closeBottomSheet} 
+            className="absolute inset-0"
+          />
+          
+          {/* 슬라이드인 바텀 드로워 */}
+          <View className="bg-white rounded-t-[32px] shadow-2xl max-h-[85%] pb-8">
+            {/* 드래그 핸들 바 */}
+            <View className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto my-3" />
+            
+            <View className="px-5 flex-col" style={{ maxHeight: '95%' }}>
+              <View className="flex-row items-center justify-between mb-4">
+                <Text className="text-[18px] font-extrabold text-gray-900">배달 주소 설정</Text>
+                <TouchableOpacity 
+                  onPress={closeBottomSheet}
+                  className="p-1 rounded-full bg-gray-100"
+                >
+                  <X size={20} color="#9ca3af" />
+                </TouchableOpacity>
+              </View>
+
+              {/* 실시간 주소 자동완성 검색창 */}
+              <View className="relative mb-4 z-20">
+                <View className="flex-row items-center gap-2">
+                  <View className="flex-1 relative justify-center">
+                    <View className="absolute left-3.5 z-10">
+                      <MapPin size={16} color="#9ca3af" />
+                    </View>
+                    <TextInput
+                      value={searchQuery}
+                      onChangeText={setSearchQuery}
+                      onSubmitEditing={handleSearchAddress}
+                      placeholder="도로명, 건물명, 지번으로 검색"
+                      returnKeyType="search"
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm text-gray-800"
+                    />
+                  </View>
+                  <TouchableOpacity
+                    onPress={handleSearchAddress}
+                    className="bg-primary-500 px-4 py-3 rounded-xl justify-center"
+                  >
+                    <Text className="text-white font-bold text-sm">검색</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* 실시간 주소 자동완성 추천 드롭다운 */}
+                {searchResults.length > 0 && (
+                  <View 
+                    className="absolute top-[48px] left-0 right-0 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-hidden z-50"
+                    style={{
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 4 },
+                      shadowOpacity: 0.1,
+                      shadowRadius: 6,
+                      elevation: 5,
+                    }}
+                  >
+                    <ScrollView nestedScrollEnabled={true} showsVerticalScrollIndicator={true}>
+                      {searchResults.map((addr, idx) => (
+                        <TouchableOpacity
+                          key={idx}
+                          onPress={() => selectSearchResultAddress(addr)}
+                          className="px-4 py-3 border-b border-gray-50 active:bg-gray-50"
+                        >
+                          <Text className="font-bold text-[13px] text-gray-800">
+                            {addr.roadAddress || addr.jibunAddress}
+                          </Text>
+                          {addr.roadAddress && addr.jibunAddress && (
+                            <Text className="text-[11px] text-gray-400 mt-0.5">
+                              지번: {addr.jibunAddress}
+                            </Text>
+                          )}
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+              </View>
+
+              <ScrollView 
+                showsVerticalScrollIndicator={false}
+                nestedScrollEnabled={true}
+                className="mb-8"
+              >
+                {/* 검색 결과 미니 지도 영역 (접이식) */}
+                {showMiniMap && (
+                  <View className="rounded-2xl overflow-hidden border border-gray-200 mb-5 shadow-sm bg-white">
+                    <View style={{ height: 200, width: "100%", backgroundColor: "#eee" }}>
+                      <MapComponent
+                        mapRef={mapRef}
+                        mapCenter={mapCenter}
+                        programmaticCenter={programmaticCenter}
+                        setMapCenter={setMapCenter}
+                        setLocation={setLocation}
+                        filtered={filtered}
+                        navigation={navigation}
+                      />
+                    </View>
+                    <View className="p-4 bg-white border-t border-gray-100">
+                      <Text className="font-extrabold text-[15px] text-gray-900" numberOfLines={1}>
+                        {roadAddress || "선택한 주소"}
+                      </Text>
+                      <Text className="text-xs text-gray-400 mt-1 mb-3">지도의 마커 위치를 확인해 주세요.</Text>
+                      <TouchableOpacity
+                        onPress={handleAddAddress}
+                        className="w-full bg-primary-500 py-3 rounded-xl items-center"
+                      >
+                        <Text className="text-white font-bold text-[14px]">
+                          이 위치를 주소지로 설정 및 추가
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
+
+                {/* 저장된 주소 목록 */}
+                <View className="pb-10">
+                  <Text className="text-xs font-extrabold text-gray-400 tracking-wider mb-2.5">저장된 배달 주소</Text>
+                  {savedAddresses.length > 0 ? (
+                    <View className="gap-2">
+                      {savedAddresses.map((addr) => (
+                        <View 
+                          key={addr.id}
+                          className={`flex-row items-center p-3.5 border rounded-2xl ${
+                            addr.isActive 
+                              ? 'bg-primary-50 border-primary-100' 
+                              : 'bg-white border-gray-100'
+                          }`}
+                        >
+                          <TouchableOpacity 
+                            onPress={() => handleActivateAddress(addr.id)}
+                            className="flex-1 flex-row items-center gap-3"
+                          >
+                            <View className={`w-8 h-8 rounded-full items-center justify-center ${
+                              addr.isActive ? 'bg-primary-500' : 'bg-gray-100'
+                            }`}>
+                              {addr.label.includes("집") ? (
+                                <Home size={16} color={addr.isActive ? 'white' : '#6b7280'} />
+                              ) : addr.label.includes("회사") || addr.label.includes("일") ? (
+                                <Briefcase size={16} color={addr.isActive ? 'white' : '#6b7280'} />
+                              ) : (
+                                <MapPin size={16} color={addr.isActive ? 'white' : '#6b7280'} />
+                              )}
+                            </View>
+                            
+                            <View className="flex-1">
+                              <View className="flex-row items-center gap-1.5 flex-wrap">
+                                <Text className={`font-bold text-[14px] ${
+                                  addr.isActive ? 'text-primary-900' : 'text-gray-900'
+                                }`}>
+                                  {addr.label}
+                                </Text>
+                                <TouchableOpacity
+                                  onPress={() => handleEditAddressLabel(addr.id, addr.label)}
+                                  activeOpacity={0.7}
+                                  className="p-0.5"
+                                >
+                                  <Edit2 size={12} color="#9ca3af" />
+                                </TouchableOpacity>
+                                {addr.isActive && (
+                                  <View className="bg-primary-500 px-1 py-0.2 rounded">
+                                    <Text className="text-[9px] text-white font-bold">선택됨</Text>
+                                  </View>
+                                )}
+                              </View>
+                              <Text 
+                                numberOfLines={1}
+                                className={`text-[12px] mt-0.5 ${
+                                  addr.isActive ? 'text-primary-700' : 'text-gray-500'
+                                }`}
+                              >
+                                {addr.roadAddress}
+                              </Text>
+                            </View>
+                          </TouchableOpacity>
+
+                          <View className="flex-row items-center gap-2 self-center ml-2">
+                            {addr.isActive && (
+                              <Check size={18} color="#f97316" />
+                            )}
+                            <TouchableOpacity 
+                              onPress={() => handleDeleteAddress(addr.id)}
+                              className="p-1.5"
+                            >
+                              <Trash2 size={15} color="#9ca3af" />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+                  ) : (
+                    <View className="p-8 items-center justify-center border border-gray-100 border-dashed rounded-2xl">
+                      <Text className="text-gray-400 text-sm">저장된 주소가 없습니다.</Text>
+                    </View>
+                  )}
+                </View>
+              </ScrollView>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* 주소 별칭 입력 모달 */}
       <Modal
