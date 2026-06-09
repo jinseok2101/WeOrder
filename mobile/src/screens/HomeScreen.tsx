@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useQuery } from "@tanstack/react-query";
+import { WebView } from "react-native-webview";
 import { Search, Crosshair, MapPin, Plus, Trash2, Check, Edit2, Home, Briefcase, X } from "lucide-react-native";
 
 import { roomsApi } from "../api/rooms";
@@ -57,71 +58,31 @@ export default function HomeScreen() {
     setSearchResults([]);
   };
 
-  // 실시간 디바운스 주소 자동완성
-  useEffect(() => {
-    if (!searchQuery.trim()) {
-      setSearchResults([]);
-      return;
-    }
-
-    const timer = setTimeout(async () => {
-      try {
-        const response = await fetch(
-          `https://maps.apigw.ntruss.com/map-geocode/v2/geocode?query=${encodeURIComponent(searchQuery.trim())}`,
-          {
-            headers: {
-              "X-NCP-APIGW-API-KEY-ID": process.env.EXPO_PUBLIC_NAVER_CLIENT_ID || "",
-              "X-NCP-APIGW-API-KEY": process.env.EXPO_PUBLIC_NAVER_CLIENT_SECRET || "",
-            },
-          }
-        );
-        const data = await response.json();
-
-        if (data.status === "OK" && data.addresses) {
-          setSearchResults(data.addresses);
-        }
-      } catch (error) {
-        console.warn("Geocoding debounce fetch error:", error);
-      }
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
-
-  const handleSearchAddress = async () => {
-    if (!searchQuery.trim()) {
-      Alert.alert("알림", "검색할 주소를 입력해주세요.");
-      return;
-    }
-
-    try {
-      const response = await fetch(
-        `https://maps.apigw.ntruss.com/map-geocode/v2/geocode?query=${encodeURIComponent(searchQuery.trim())}`,
-        {
-          headers: {
-            "X-NCP-APIGW-API-KEY-ID": process.env.EXPO_PUBLIC_NAVER_CLIENT_ID || "",
-            "X-NCP-APIGW-API-KEY": process.env.EXPO_PUBLIC_NAVER_CLIENT_SECRET || "",
+  const daumPostcodeHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+      <style>
+        html, body, #wrap { width: 100%; height: 100%; margin: 0; padding: 0; background-color: #ffffff; }
+      </style>
+      <script src="https://t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+    </head>
+    <body>
+      <div id="wrap"></div>
+      <script>
+        var element_wrap = document.getElementById('wrap');
+        new daum.Postcode({
+          oncomplete: function(data) {
+            window.ReactNativeWebView.postMessage(JSON.stringify(data));
           },
-        }
-      );
-      const data = await response.json();
-
-      if (data.status === "OK" && data.addresses?.length > 0) {
-        const addresses = data.addresses;
-        if (addresses.length === 1) {
-          selectSearchResultAddress(addresses[0]);
-        } else {
-          setSearchResults(addresses);
-        }
-      } else {
-        Alert.alert("알림", "검색 결과가 없습니다. 도로명이나 지번을 다시 확인해주세요.");
-        setSearchResults([]);
-      }
-    } catch (error) {
-      console.error("주소 검색 API 호출 에러:", error);
-      Alert.alert("오류", "주소 검색에 실패했습니다.");
-    }
-  };
+          width: '100%',
+          height: '100%'
+        }).embed(element_wrap);
+      </script>
+    </body>
+    </html>
+  `;
 
   const selectSearchResultAddress = (address: any) => {
     const lat = parseFloat(address.y);
@@ -509,63 +470,51 @@ export default function HomeScreen() {
                 </TouchableOpacity>
               </View>
 
-              {/* 실시간 주소 자동완성 검색창 */}
-              <View className="relative mb-4 z-20">
-                <View className="flex-row items-center gap-2">
-                  <View className="flex-1 relative justify-center">
-                    <View className="absolute left-3.5 z-10">
-                      <MapPin size={16} color="#9ca3af" />
-                    </View>
-                    <TextInput
-                      value={searchQuery}
-                      onChangeText={setSearchQuery}
-                      onSubmitEditing={handleSearchAddress}
-                      placeholder="도로명, 건물명, 지번으로 검색"
-                      returnKeyType="search"
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm text-gray-800"
-                    />
-                  </View>
-                  <TouchableOpacity
-                    onPress={handleSearchAddress}
-                    className="bg-primary-500 px-4 py-3 rounded-xl justify-center"
-                  >
-                    <Text className="text-white font-bold text-sm">검색</Text>
-                  </TouchableOpacity>
-                </View>
+              {/* Daum 우편번호 서비스 임베드 */}
+              {!showMiniMap && (
+                <View style={{ height: 450, width: "100%", borderRadius: 16, overflow: "hidden", borderWidth: 1, borderColor: "#e5e7eb", marginBottom: 20 }}>
+                  <WebView
+                    source={{ html: daumPostcodeHtml }}
+                    onMessage={async (event) => {
+                      try {
+                        const data = JSON.parse(event.nativeEvent.data);
+                        const fullAddress = data.roadAddress || data.address;
+                        
+                        // 네이버 지오코딩 REST API로 좌표 검색
+                        const response = await fetch(
+                          `https://maps.apigw.ntruss.com/map-geocode/v2/geocode?query=${encodeURIComponent(fullAddress)}`,
+                          {
+                            headers: {
+                              "X-NCP-APIGW-API-KEY-ID": process.env.EXPO_PUBLIC_NAVER_CLIENT_ID || "",
+                              "X-NCP-APIGW-API-KEY": process.env.EXPO_PUBLIC_NAVER_CLIENT_SECRET || "",
+                            },
+                          }
+                        );
+                        const resData = await response.json();
 
-                {/* 실시간 주소 자동완성 추천 드롭다운 */}
-                {searchResults.length > 0 && (
-                  <View 
-                    className="absolute top-[48px] left-0 right-0 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-hidden z-50"
-                    style={{
-                      shadowColor: "#000",
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.1,
-                      shadowRadius: 6,
-                      elevation: 5,
+                        if (resData.status === "OK" && resData.addresses?.length > 0) {
+                          const addr = resData.addresses[0];
+                          const lat = parseFloat(addr.y);
+                          const lng = parseFloat(addr.x);
+
+                          setMapCenter({ latitude: lat, longitude: lng });
+                          moveCameraTo(lat, lng);
+                          setLocation(lat, lng);
+                          setShowMiniMap(true);
+                        } else {
+                          Alert.alert("오류", "선택한 주소의 좌표 정보를 가져올 수 없습니다.");
+                        }
+                      } catch (err) {
+                        console.error("Geocoding failed:", err);
+                        Alert.alert("오류", "주소 좌표 변환에 실패했습니다.");
+                      }
                     }}
-                  >
-                    <ScrollView nestedScrollEnabled={true} showsVerticalScrollIndicator={true}>
-                      {searchResults.map((addr, idx) => (
-                        <TouchableOpacity
-                          key={idx}
-                          onPress={() => selectSearchResultAddress(addr)}
-                          className="px-4 py-3 border-b border-gray-50 active:bg-gray-50"
-                        >
-                          <Text className="font-bold text-[13px] text-gray-800">
-                            {addr.roadAddress || addr.jibunAddress}
-                          </Text>
-                          {addr.roadAddress && addr.jibunAddress && (
-                            <Text className="text-[11px] text-gray-400 mt-0.5">
-                              지번: {addr.jibunAddress}
-                            </Text>
-                          )}
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
-                  </View>
-                )}
-              </View>
+                    style={{ flex: 1 }}
+                    javaScriptEnabled={true}
+                    domStorageEnabled={true}
+                  />
+                </View>
+              )}
 
               <ScrollView 
                 showsVerticalScrollIndicator={false}

@@ -86,62 +86,71 @@ export default function Home() {
   const [showMiniMap, setShowMiniMap] = useState(false);
   const [isUserProfileModalOpen, setIsUserProfileModalOpen] = useState(false);
 
-  // 실시간 디바운스 주소 자동완성
+  // Daum 우편번호 서비스 임베드 및 지도 연동
   useEffect(() => {
-    if (!searchQuery.trim()) {
-      setSearchResults([]);
-      return;
-    }
+    if (!isBottomSheetOpen || showMiniMap) return;
 
-    const timer = setTimeout(() => {
-      const naver = (window as any).naver;
-      if (!naver || !naver.maps || !naver.maps.Service) return;
+    const scriptId = "daum-postcode-script";
+    let script = document.getElementById(scriptId) as HTMLScriptElement;
+    
+    const initPostcode = () => {
+      const postcodeContainer = document.getElementById("postcode-container");
+      if (!postcodeContainer) return;
 
-      naver.maps.Service.geocode(
-        { query: searchQuery.trim() },
-        function (status: any, response: any) {
-          if (status === naver.maps.Service.Status.OK) {
-            const addresses = response.v2?.addresses || [];
-            setSearchResults(addresses);
+      postcodeContainer.innerHTML = ""; // 이전 내용 초기화
+
+      new (window as any).daum.Postcode({
+        oncomplete: function (data: any) {
+          const fullAddress = data.roadAddress || data.address;
+          
+          const naver = (window as any).naver;
+          if (!naver || !naver.maps || !naver.maps.Service) {
+            alert("지도 API가 로드되지 않았습니다.");
+            return;
           }
-        }
-      );
-    }, 300);
 
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
+          naver.maps.Service.geocode(
+            { query: fullAddress },
+            function (status: any, response: any) {
+              if (status !== naver.maps.Service.Status.OK) {
+                alert("주소 좌표 검색 중 오류가 발생했습니다.");
+                return;
+              }
 
-  const handleSearchAddress = () => {
-    if (!searchQuery.trim()) {
-      alert("검색할 주소를 입력해주세요.");
-      return;
-    }
+              const addresses = response.v2?.addresses || [];
+              if (addresses.length === 0) {
+                alert("검색 결과의 좌표를 찾을 수 없습니다.");
+                return;
+              }
 
-    const naver = (window as any).naver;
-    if (!naver || !naver.maps || !naver.maps.Service) {
-      alert("지도 API가 로드되지 않았습니다.");
-      return;
-    }
+              selectSearchResultAddress(addresses[0]);
+            }
+          );
+        },
+        width: "100%",
+        height: "100%",
+      }).embed(postcodeContainer);
+    };
 
-    naver.maps.Service.geocode(
-      { query: searchQuery.trim() },
-      function (status: any, response: any) {
-        if (status !== naver.maps.Service.Status.OK) {
-          alert("주소 검색 중 오류가 발생했습니다.");
-          return;
-        }
-
-        const addresses = response.v2?.addresses || [];
-        if (addresses.length === 0) {
-          alert("검색 결과가 없습니다. 도로명이나 지번을 다시 확인해주세요.");
-          setSearchResults([]);
-          return;
-        }
-
-        selectSearchResultAddress(addresses[0]);
+    if (!script) {
+      script = document.createElement("script");
+      script.id = scriptId;
+      script.src = "//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js";
+      script.async = true;
+      script.onload = () => {
+        initPostcode();
+      };
+      document.head.appendChild(script);
+    } else {
+      if ((window as any).daum && (window as any).daum.Postcode) {
+        initPostcode();
+      } else {
+        script.onload = () => {
+          initPostcode();
+        };
       }
-    );
-  };
+    }
+  }, [isBottomSheetOpen, showMiniMap]);
 
   const selectSearchResultAddress = (address: any) => {
     const lat = parseFloat(address.y);
@@ -169,11 +178,7 @@ export default function Home() {
     fetchAddress(lat, lng);
   };
 
-  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      handleSearchAddress();
-    }
-  };
+
   const [selectedProfileUserId, setSelectedProfileUserId] = useState<string | null>(null);
   const [roadAddress, setRoadAddress] = useState("");
   const [jibunAddress, setJibunAddress] = useState("");
@@ -765,50 +770,14 @@ export default function Home() {
                 </button>
               </div>
 
-              {/* 실시간 주소 자동완성 검색창 */}
-              <div className="relative mb-5 z-20 flex-shrink-0">
-                <div className="flex items-center gap-2">
-                  <div className="relative flex-1">
-                    <MapPin size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      onKeyDown={handleSearchKeyDown}
-                      placeholder="도로명, 건물명, 지번으로 검색"
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    />
-                  </div>
-                  <button
-                    onClick={handleSearchAddress}
-                    className="bg-primary-500 hover:bg-primary-600 text-white font-bold text-sm px-4 py-2.5 rounded-xl shadow-sm transition-all active:scale-95 cursor-pointer whitespace-nowrap"
-                  >
-                    검색
-                  </button>
-                </div>
-
-                {/* 실시간 주소 자동완성 추천 드롭다운 */}
-                {searchResults.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-56 overflow-y-auto z-50 divide-y divide-gray-50">
-                    {searchResults.map((addr, idx) => (
-                      <div
-                        key={idx}
-                        onClick={() => selectSearchResultAddress(addr)}
-                        className="px-4 py-3 hover:bg-gray-50 cursor-pointer text-left transition-colors"
-                      >
-                        <p className="font-bold text-[13px] text-gray-800">
-                          {addr.roadAddress || addr.jibunAddress}
-                        </p>
-                        {addr.roadAddress && addr.jibunAddress && (
-                          <p className="text-[11px] text-gray-400 mt-0.5">
-                            지번: {addr.jibunAddress}
-                          </p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              {/* Daum 우편번호 서비스 임베드 */}
+              {!showMiniMap && (
+                <div 
+                  id="postcode-container" 
+                  className="w-full border border-gray-200 rounded-2xl overflow-hidden mb-5 flex-shrink-0" 
+                  style={{ height: "450px" }}
+                />
+              )}
 
               {/* 검색 결과 미니 지도 영역 (접이식) */}
               {showMiniMap && (
