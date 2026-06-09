@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User as UserIcon, CheckCircle2, ChevronDown, ChevronUp, Star } from 'lucide-react';
+import { User as UserIcon, CheckCircle2, ChevronDown, ChevronUp, Star, ChevronRight } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { authApi } from '../../api/auth';
 import { useMutation } from '@tanstack/react-query';
@@ -77,7 +77,7 @@ export default function ProfileSettings() {
         </div>
         <div className="flex items-center gap-1">
           <span className="text-xs text-amber-900 font-bold">내 프로필 보기</span>
-          <span className="text-xs text-amber-700">➡️</span>
+          <ChevronRight size={14} className="text-amber-700" />
         </div>
       </div>
 
