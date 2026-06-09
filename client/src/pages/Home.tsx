@@ -69,10 +69,28 @@ export default function Home() {
   const handleEnableNotifications = async () => {
     try {
       if ("Notification" in window) {
-        const permission = await Notification.requestPermission();
-        if (permission === "granted") {
+        // iOS/Safari 호환성을 위해 콜백과 프로미스 구조를 모두 지원하는 래퍼 구현
+        const requestPermission = () => {
+          return new Promise<NotificationPermission>((resolve) => {
+            try {
+              const res = Notification.requestPermission((p) => {
+                resolve(p);
+              });
+              if (res && typeof res.then === "function") {
+                res.then(resolve);
+              }
+            } catch (err) {
+              resolve(Notification.permission);
+            }
+          });
+        };
+
+        const permission = await requestPermission();
+        const finalPermission = permission || Notification.permission;
+
+        if (finalPermission === "granted") {
           setBannerType(null);
-        } else if (permission === "denied") {
+        } else if (finalPermission === "denied") {
           setBannerType("denied");
         }
       }
@@ -80,6 +98,13 @@ export default function Home() {
       registerPushNotifications();
     } catch (e) {
       console.warn("Failed to subscribe from home banner:", e);
+      if ("Notification" in window) {
+        if (Notification.permission === "granted") {
+          setBannerType(null);
+        } else if (Notification.permission === "denied") {
+          setBannerType("denied");
+        }
+      }
     }
   };
 
