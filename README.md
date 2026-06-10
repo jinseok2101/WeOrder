@@ -2,7 +2,8 @@
 
 이웃들과 함께 배달비를 분담하고 실시간으로 정산 및 배달 상태를 공유하는 공동 배달 플랫폼 서비스입니다.
 
-- **바로가기**: [WeOrder](https://weorder.vercel.app) *(※ 모바일 기기로 접속 시 브라우저의 **'홈 화면에 추가'** 기능을 통해 앱스토어 설치 없이 네이티브 앱처럼 즉시 이용하실 수 있습니다.)*
+- **바로가기**: [WeOrder](https://weorder.vercel.app) _(※ 모바일 기기로 접속 시 브라우저의 **'홈 화면에 추가'** 기능을 통해 앱스토어 설치 없이 네이티브 앱처럼 즉시 이용하실 수 있습니다.)_
+- **시연 영상**: [YouTube 시연 영상](https://youtu.be/mhccyWJSBuQ)
 - **개발 구분**: 개인 프로젝트 (1인 개발 - 웹 & 모바일)
 - **개발 기간**: 2026.03.23 ~ 2026.06.09
 
@@ -45,8 +46,19 @@ WeOrder는 1인 가구의 급증으로 인해 혼자서 부담하기에는 너�
 ## 시스템 아키텍처 (System Architecture)
 
 WeOrder의 클라이언트, 서버, 데이터베이스, 알림 서비스 간의 데이터 흐름 및 상호작용 아키텍처 구조입니다.
+
 <p align="center">
   <a href="./assets/images/architecture.png">
     <img src="./assets/images/architecture.png" alt="System Architecture" width="700"/>
+  </a>
+</p>
+
+---
+
+## 🎬 시연 영상 (Demo Video)
+
+<p align="center">
+  <a href="https://youtu.be/mhccyWJSBuQ">
+    <img src="https://img.youtube.com/vi/mhccyWJSBuQ/0.jpg" alt="WeOrder Demo Video" width="700"/>
   </a>
 </p>
