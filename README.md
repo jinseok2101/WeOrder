@@ -42,7 +42,7 @@ WeOrder는 1인 가구의 급증으로 인해 혼자서 부담하기에는 너�
 
 ---
 
-## 📐 시스템 아키텍처 (System Architecture)
+## 시스템 아키텍처 (System Architecture)
 
 WeOrder의 클라이언트, 서버, 데이터베이스, 알림 서비스 간의 데이터 흐름 및 상호작용 아키텍처 구조입니다.
 <p align="center">
